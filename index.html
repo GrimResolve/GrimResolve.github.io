@@ -17,36 +17,47 @@
             padding: 15px 20px;
             z-index: 1000;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.082);
+            height: 50px; /* Fixed height */
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header h1 {
             margin: 0;
             font-size: 24px;
         }
+        
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
 
-        /* Adjust body padding to account for fixed header */
+        /* Adjust body padding to account for fixed header exactly */
         body {
             font-family: Arial, sans-serif;
             margin: 0 auto;
             padding: 20px;
-            padding-top: 80px; /* Increased to account for fixed header */
+            padding-top: 10px; /* Match header height + some padding */
             background-color: #f0f0f0;
+            height: 100vh;
+            overflow: hidden; /* Prevent body scrolling */
         }
         
         .hidden {
             display: none;
         }
 
-        .center-pane > div { /* Adjusted selector */
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
+        .center-pane > div {
+            background-color: transparent;
+            padding: 0;
+            max-width: 940px;
             margin: 0 auto;
-            max-width: 900px;
         }
         table {
             margin: 0 auto;
-            max-width: 900px;
+            max-width: 940px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -85,7 +96,7 @@
             -moz-appearance: textfield; 
         }
         button {
-            margin: 10px 0;
+            margin: 0px 0;
             padding: 4px 8px;
             background-color: #adadad;
             color: white;
@@ -266,6 +277,8 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             background-color: #f9f9f9;
+            overflow-y: visible; /* Let parent handle scrolling */
+            height: auto; /* Let content determine height */
         }
 
         .point-config-header {
@@ -471,7 +484,7 @@
 
         .point-breakdown {
             position: absolute;
-            z-index: 100;
+            z-index: 1000;
             width: 220px;
             padding: 10px;
             background-color: #fff;
@@ -562,6 +575,8 @@
             display: flex;
             gap: 20px; /* Space between columns */
             position: relative; /* For absolute positioning context */
+            height: calc(100vh - 70px); /* Take up full viewport height minus header */
+            overflow: hidden;
         }
 
         .left-pane, .right-pane {
@@ -571,7 +586,7 @@
             border-radius: 5px;
             height: fit-content; /* Adjust height based on content */
             position: fixed; /* Fix the position */
-            top: 80px; /* Position below fixed header */
+            top: 70px; /* Position below fixed header */
             max-height: calc(100vh - 100px); /* Viewport height minus header and padding */
             overflow-y: auto; /* Allow scrolling if content is too tall */
         }
@@ -588,11 +603,119 @@
             flex: 1; /* Grow to fill available space */
             margin: 0 220px; /* Add margin to account for fixed side panes */
         }
+
+        /* Table container for fixed positioning */
+        .models-table-container {
+            position: sticky;
+            top: 70px; /* Exact position matching body padding-top */
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px 5px 0 0;
+            z-index: 50;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 0;
+            width: 100%;
+            box-sizing: border-box;
+            overflow-x: auto; /* Allow horizontal scrolling if needed */
+        }
+        
+        /* Table scrolling styles */
+        .models-table-container table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed; /* Fixed layout for better column control */
+        }
+        
+        /* Adjust column widths to be more compact */
+        .models-table-container th:first-child, 
+        .models-table-container td:first-child {
+            width: 50px; /* Reduce the width of the first column (Points) */
+        }
+        
+        .models-table-container th:nth-child(2), 
+        .models-table-container td:nth-child(2) {
+            width: 80px; /* Adjust width for the name column */
+        }
+        
+        .models-table-container th:not(:first-child):not(:nth-child(2)):not(:last-child), 
+        .models-table-container td:not(:first-child):not(:nth-child(2)):not(:last-child) {
+            width: 35px; /* Make stat columns more compact */
+        }
+        
+        .models-table-container th:last-child, 
+        .models-table-container td:last-child {
+            width: 60px; /* Adjust actions column */
+        }
+        
+        .models-table-container thead {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 10;
+        }
+        
+        .models-table-container tbody {
+            display: block;
+            max-height: 250px; /* Height for approximately 3 rows */
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        /* Expanded table when point config is hidden */
+        .point-config-hidden .models-table-container tbody {
+            max-height: 600px; /* Show more rows when point config is hidden */
+        }
+        
+        .models-table-container thead tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        
+        .models-table-container tbody tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        
+        /* Ensure header styles are consistent */
+        .models-table-container th {
+            background-color: #d1d1d1;
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        /* Create a spacer to prevent any content showing in gap */
+        .header-table-spacer {
+            height: 0;
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+        }
+
+        /* Scrollable content area below the fixed table */
+        .scrollable-content {
+            background-color: white;
+            border-radius: 0 0 5px 5px;
+            margin-top: 50px; /* Space between fixed table and scrollable content */
+            position: relative;
+            top: 0;
+            z-index: 40; /* Lower than the table container */
+            overflow-y: auto; /* Allow scrolling */
+            height: calc(45vh); /* Fixed height based on viewport minus header and table */
+            padding-bottom: 1px; /* Add extra padding at bottom to ensure content is visible */
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Grim Resolver</h1>
+        <div class="header-buttons">
+            <button class="export-btn" @click="exportModels">Export to CSV</button>
+            <label class="import-btn" for="importInput">Import from CSV</label>
+            <input type="file" id="importInput" accept=".csv" @change="importModels($event)">
+        </div>
     </div>
 
     <div class="three-column-layout" x-data="{
@@ -829,6 +952,25 @@
                 invulnSave: lastModel.invulnSave
             };
             this.models.push(newModel);
+        },
+        
+        duplicateModel(index) {
+            const modelToDuplicate = this.models[index];
+            const newModel = {
+                name: modelToDuplicate.name,
+                movement: modelToDuplicate.movement,
+                weaponSkill: modelToDuplicate.weaponSkill,
+                ballisticSkill: modelToDuplicate.ballisticSkill,
+                strength: modelToDuplicate.strength,
+                toughness: modelToDuplicate.toughness,
+                wounds: modelToDuplicate.wounds,
+                initiative: modelToDuplicate.initiative,
+                attacks: modelToDuplicate.attacks,
+                leadership: modelToDuplicate.leadership,
+                save: modelToDuplicate.save,
+                invulnSave: modelToDuplicate.invulnSave
+            };
+            this.models.splice(index + 1, 0, newModel);
         },
         
         removeModel(index) {
@@ -1311,345 +1453,342 @@
         </div>
 
         <div class="center-pane">
-            <div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="tooltip" data-tooltip="Points cost">Pts</th>
-                            <th>Name</th>
-                            <th class="tooltip" data-tooltip="Movement: How far the model can move in inches">M</th>
-                            <th class="tooltip" data-tooltip="Weapon Skill: Ability in close combat">WS</th>
-                            <th class="tooltip" data-tooltip="Ballistic Skill: Accuracy with ranged weapons (lower is better)">BS</th>
-                            <th class="tooltip" data-tooltip="Strength: Physical power of the model in combat">S</th>
-                            <th class="tooltip" data-tooltip="Toughness: Difficulty to wound the model">T</th>
-                            <th class="tooltip" data-tooltip="Wounds: Amount of damage the model can sustain">W</th>
-                            <th class="tooltip" data-tooltip="Initiative: Speed and combat reaction time">I</th>
-                            <th class="tooltip" data-tooltip="Attacks: Number of close combat attacks">A</th>
-                            <th class="tooltip" data-tooltip="Leadership: Bravery and morale of the model">Ld</th>
-                            <th class="tooltip" data-tooltip="Save: Armor save value (lower is better)">Sv</th>
-                            <th class="tooltip" data-tooltip="Invulnerable Save: Special save that cannot be modified (lower is better)">Inv</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="(model, index) in models" :key="index">
+            <div :class="{'point-config-hidden': !showPointConfig}">
+                <div class="models-table-container">
+                    <table>
+                        <thead>
                             <tr>
-                                <td><span style="display: inline-block;" x-text="getRelativePoints(model, index)"></span>
-                                    <div class="point-breakdown-toggle" @click="model.showPointBreakdown = !model.showPointBreakdown">
-                                        <span x-text="model.showPointBreakdown ? '▲' : '▼'" class="breakdown-arrow"></span>
-                                    </div>
-                                    <div class="point-breakdown" 
-                                         x-show="model.showPointBreakdown" 
-                                         x-data="{ breakdown: getPointBreakdown(model) }"
-                                         x-effect="breakdown = getPointBreakdown(model)">
-                                        <div class="breakdown-header">Absolute Point Calculation:</div>
-                                        <div class="breakdown-base">Base Cost: 10</div>
-                                        <template x-if="breakdown">
-                                            <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
-                                                <div class="breakdown-item">
-                                                    <span x-text="formatStatName(stat) + ':'"></span>
-                                                    <span x-text="baseValue.toFixed(1)"></span>
-                                                    <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
-                                                        <span class="adjusted-value" 
-                                                              x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
-                                                    </template>
-                                                </div>
-                                            </template>
-                                            <div class="breakdown-total">
-                                                Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
-                                            </div>
-                                        </template>
-                                        <template x-if="!breakdown">
-                                            <div>Loading breakdown...</div>
-                                        </template>
-                                    </div>
-                                </td>
-                                <td><input type="text" x-model="model.name" placeholder="Model name"></td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.movement" min="1" max="12">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'movement')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'movement')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.weaponSkill" min="1" max="10">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'weaponSkill')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'weaponSkill')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="text" x-model="model.ballisticSkill" @blur="ensurePlusSign(model, 'ballisticSkill')">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementSkill(model, 'ballisticSkill')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementSkill(model, 'ballisticSkill')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.strength" min="1" max="10">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'strength')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'strength')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.toughness" min="1" max="10">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'toughness')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'toughness')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.wounds" min="1" max="10">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'wounds')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'wounds')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.initiative" min="1" max="10">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'initiative')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'initiative')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.attacks" min="1" max="10">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'attacks')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'attacks')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="number" x-model.number="model.leadership" min="1" max="10">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementNumeric(model, 'leadership')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementNumeric(model, 'leadership')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="text" x-model="model.save" @blur="ensurePlusSign(model, 'save')">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementSkill(model, 'save')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementSkill(model, 'save')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="skill-input-wrapper">
-                                        <input type="text" x-model="model.invulnSave" @blur="ensurePlusSign(model, 'invulnSave')">
-                                        <div class="spinner-buttons">
-                                            <button class="spinner-button" @click="incrementSkill(model, 'invulnSave')" title="Increase">▲</button>
-                                            <button class="spinner-button" @click="decrementSkill(model, 'invulnSave')" title="Decrease">▼</button>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <button class="delete-btn" @click="removeModel(index)" :disabled="models.length === 1">delete</button>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-                <button @click="showPointConfig = !showPointConfig" class="config-btn">
-                    <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
-                </button>
-                
-                <div x-show="showPointConfig" class="point-config-tables">
-                    <div class="point-config-header">
-                        <h3>Point Value Configuration</h3>
-                        <div class="point-config-actions">
-                            <button @click="exportPointValues" class="export-btn">Export Configuration</button>
-                            <label class="import-btn" for="importPointValues">Import Configuration</label>
-                            <input type="file" id="importPointValues" @change="importPointValues($event)" accept=".json">
-                        </div>
-                    </div>
-
-                    <div class="stat-nav">
-                        <div class="stat-nav-label">Current Stat:</div>
-                        <div class="stat-buttons">
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'movement'"
-                                x-bind:class="{'active': currentStat === 'movement'}">M</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'weaponSkill'"
-                                x-bind:class="{'active': currentStat === 'weaponSkill'}">WS</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'ballisticSkill'"
-                                x-bind:class="{'active': currentStat === 'ballisticSkill'}">BS</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'strength'"
-                                x-bind:class="{'active': currentStat === 'strength'}">S</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'toughness'"
-                                x-bind:class="{'active': currentStat === 'toughness'}">T</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'wounds'"
-                                x-bind:class="{'active': currentStat === 'wounds'}">W</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'attacks'"
-                                x-bind:class="{'active': currentStat === 'attacks'}">A</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'leadership'"
-                                x-bind:class="{'active': currentStat === 'leadership'}">Ld</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'save'"
-                                x-bind:class="{'active': currentStat === 'save'}">Sv</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'invulnSave'"
-                                x-bind:class="{'active': currentStat === 'invulnSave'}">Inv</button>
-                            <button 
-                                class="stat-button" 
-                                x-on:click="currentStat = 'weights'"
-                                x-bind:class="{'active': currentStat === 'weights'}">Weights</button>
-                        </div>
-                    </div>
-
-                    <div class="single-stat-config" x-show="currentStat !== 'weights'">
-                        <h4 x-text="formatStatName(currentStat)"></h4>
-                        <table class="config-table">
-                            <tr>
-                                <th>Value</th>
-                                <th>Points</th>
+                                <th class="tooltip" data-tooltip="Points cost">Pts</th>
+                                <th>Name</th>
+                                <th class="tooltip" data-tooltip="Movement: How far the model can move in inches">M</th>
+                                <th class="tooltip" data-tooltip="Weapon Skill: Ability in close combat">WS</th>
+                                <th class="tooltip" data-tooltip="Ballistic Skill: Accuracy with ranged weapons (lower is better)">BS</th>
+                                <th class="tooltip" data-tooltip="Strength: Physical power of the model in combat">S</th>
+                                <th class="tooltip" data-tooltip="Toughness: Difficulty to wound the model">T</th>
+                                <th class="tooltip" data-tooltip="Wounds: Amount of damage the model can sustain">W</th>
+                                <th class="tooltip" data-tooltip="Initiative: Speed and combat reaction time">I</th>
+                                <th class="tooltip" data-tooltip="Attacks: Number of close combat attacks">A</th>
+                                <th class="tooltip" data-tooltip="Leadership: Bravery and morale of the model">Ld</th>
+                                <th class="tooltip" data-tooltip="Save: Armor save value (lower is better)">Sv</th>
+                                <th class="tooltip" data-tooltip="Invulnerable Save: Special save that cannot be modified (lower is better)">Inv</th>
                                 <th>Actions</th>
                             </tr>
-                            <template x-for="(points, value) in pointValueLookups[currentStat]" :key="value">
+                        </thead>
+                        <tbody>
+                            <template x-for="(model, index) in models" :key="index">
                                 <tr>
-                                    <td x-text="value"></td>
-                                    <td>
-                                        <input type="number" 
-                                               x-model.number="pointValueLookups[currentStat][value]"
-                                               class="point-input">
+                                    <td><span style="display: inline-block;" x-text="getRelativePoints(model, index)"></span>
+                                        <div class="point-breakdown-toggle" @click="model.showPointBreakdown = !model.showPointBreakdown">
+                                            <span x-text="model.showPointBreakdown ? '▲' : '▼'" class="breakdown-arrow"></span>
+                                        </div>
+                                        <div class="point-breakdown" 
+                                             x-show="model.showPointBreakdown" 
+                                             x-data="{ breakdown: getPointBreakdown(model) }"
+                                             x-effect="breakdown = getPointBreakdown(model)">
+                                            <div class="breakdown-header">Absolute Point Calculation:</div>
+                                            <div class="breakdown-base">Base Cost: 10</div>
+                                            <template x-if="breakdown">
+                                                <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
+                                                    <div class="breakdown-item">
+                                                        <span x-text="formatStatName(stat) + ':'"></span>
+                                                        <span x-text="baseValue.toFixed(1)"></span>
+                                                        <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
+                                                            <span class="adjusted-value" 
+                                                                  x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <div class="breakdown-total">
+                                                    Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
+                                                </div>
+                                            </template>
+                                            <template x-if="!breakdown">
+                                                <div>Loading breakdown...</div>
+                                            </template>
+                                        </div>
                                     </td>
-                                    <td class="action-cell">
-                                        <button class="adjust-btn" title="Increase" @click="pointValueLookups[currentStat][value]++">+</button>
-                                        <button class="adjust-btn" title="Decrease" @click="pointValueLookups[currentStat][value]--">-</button>
+                                    <td><input type="text" x-model="model.name" placeholder="Model name"></td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.movement" min="1" max="12">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'movement')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'movement')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.weaponSkill" min="1" max="10">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'weaponSkill')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'weaponSkill')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="text" x-model="model.ballisticSkill" @blur="ensurePlusSign(model, 'ballisticSkill')">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementSkill(model, 'ballisticSkill')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementSkill(model, 'ballisticSkill')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.strength" min="1" max="10">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'strength')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'strength')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.toughness" min="1" max="10">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'toughness')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'toughness')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.wounds" min="1" max="10">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'wounds')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'wounds')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.initiative" min="1" max="10">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'initiative')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'initiative')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.attacks" min="1" max="10">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'attacks')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'attacks')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="number" x-model.number="model.leadership" min="1" max="10">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementNumeric(model, 'leadership')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementNumeric(model, 'leadership')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="text" x-model="model.save" @blur="ensurePlusSign(model, 'save')">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementSkill(model, 'save')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementSkill(model, 'save')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skill-input-wrapper">
+                                            <input type="text" x-model="model.invulnSave" @blur="ensurePlusSign(model, 'invulnSave')">
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementSkill(model, 'invulnSave')" title="Increase">▲</button>
+                                                <button class="spinner-button" @click="decrementSkill(model, 'invulnSave')" title="Decrease">▼</button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button class="delete-btn" @click="removeModel(index)" :disabled="models.length === 1">X</button>
+                                        <button @click="duplicateModel(index)">C</button>
                                     </td>
                                 </tr>
                             </template>
-                        </table>
+                        </tbody>
+                    </table>
+                    <div class="import-export-container">
                     </div>
-
-                    <!-- Weight Matrix Editor -->
-                    <div class="weight-matrix-container" x-show="currentStat === 'weights'">
-                        <h4>Stat Weight Matrix</h4>
-                        <p class="matrix-info">This matrix defines how stats affect each other. Each row represents a source stat, and each column represents a target stat. The value at the intersection represents the influence of the source on the target.</p>
-                        
-                        <div class="weight-matrix-actions">
-                            <button @click="saveWeightMatrix" class="save-weights-btn">Save Weight Matrix</button>
-                            <button @click="resetWeightMatrix" class="reset-weights-btn">Reset to Default</button>
-                            <button @click="includeWeightMatrixInExport = !includeWeightMatrixInExport" 
-                                    class="toggle-weights-btn"
-                                    x-bind:class="{'active': includeWeightMatrixInExport}">
-                                <span x-text="includeWeightMatrixInExport ? 'Included in Export' : 'Click to include in Export'"></span>
-                            </button>
+                    
+                    <div class="total-points hidden">
+                        Total Points: <span x-text="getTotalPoints()"></span>
+                    </div>
+                    
+                    <button @click="showPointConfig = !showPointConfig" class="config-btn">
+                        <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
+                    </button>
+                </div>
+                
+                <div class="scrollable-content">
+                    <div x-show="showPointConfig" class="point-config-tables">
+                        <div class="point-config-header">
+                            <h3>Point Value Configuration</h3>
+                            <div class="point-config-actions">
+                                <button @click="exportPointValues" class="export-btn">Export Configuration</button>
+                                <label class="import-btn" for="importPointValues">Import Configuration</label>
+                                <input type="file" id="importPointValues" @change="importPointValues($event)" accept=".json">
+                            </div>
                         </div>
-                        
-                        <div class="weight-matrix-scroll">
-                            <table class="weight-matrix-table">
-                                <thead>
+
+                        <div class="stat-nav">
+                            <div class="stat-nav-label">Current Stat:</div>
+                            <div class="stat-buttons">
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'movement'"
+                                    x-bind:class="{'active': currentStat === 'movement'}">M</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'weaponSkill'"
+                                    x-bind:class="{'active': currentStat === 'weaponSkill'}">WS</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'ballisticSkill'"
+                                    x-bind:class="{'active': currentStat === 'ballisticSkill'}">BS</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'strength'"
+                                    x-bind:class="{'active': currentStat === 'strength'}">S</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'toughness'"
+                                    x-bind:class="{'active': currentStat === 'toughness'}">T</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'wounds'"
+                                    x-bind:class="{'active': currentStat === 'wounds'}">W</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'attacks'"
+                                    x-bind:class="{'active': currentStat === 'attacks'}">A</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'leadership'"
+                                    x-bind:class="{'active': currentStat === 'leadership'}">Ld</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'save'"
+                                    x-bind:class="{'active': currentStat === 'save'}">Sv</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'invulnSave'"
+                                    x-bind:class="{'active': currentStat === 'invulnSave'}">Inv</button>
+                                <button 
+                                    class="stat-button" 
+                                    x-on:click="currentStat = 'weights'"
+                                    x-bind:class="{'active': currentStat === 'weights'}">Weights</button>
+                            </div>
+                        </div>
+
+                        <div class="single-stat-config" x-show="currentStat !== 'weights'">
+                            <h4 x-text="formatStatName(currentStat)"></h4>
+                            <table class="config-table">
+                                <tr>
+                                    <th>Value</th>
+                                    <th>Points</th>
+                                    <th>Actions</th>
+                                </tr>
+                                <template x-for="(points, value) in pointValueLookups[currentStat]" :key="value">
                                     <tr>
-                                        <th>Source ↓ / Target →</th>
-                                        <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
-                                            <th class="tooltip" :data-tooltip="'Base cost multiplier for ' + formatStatName(statName)">
-                                                <div x-text="getStatShortName(statName)"></div>
-                                                <input type="number"
-                                                       x-model.number="statMultipliers[statName]"
-                                                       min="0"
-                                                       step="0.1"
-                                                       class="weight-input"
-                                                       style="margin-top: 2px;"
-                                                       @input="$nextTick(() => $forceUpdate())">
-                                            </th>
-                                        </template>
+                                        <td x-text="value"></td>
+                                        <td>
+                                            <input type="number" 
+                                                   x-model.number="pointValueLookups[currentStat][value]"
+                                                   class="point-input">
+                                        </td>
+                                        <td class="action-cell">
+                                            <button class="adjust-btn" title="Increase" @click="pointValueLookups[currentStat][value]++">+</button>
+                                            <button class="adjust-btn" title="Decrease" @click="pointValueLookups[currentStat][value]--">-</button>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
-                                        <tr>
-                                            <td x-text="getStatShortName(sourceStat)" class="weight-source-stat tooltip" :data-tooltip="'This row controls how much ' + formatStatName(sourceStat) + ' adds to the cost of each stat'"></td>
-                                            <template x-for="(weight, i) in weights" :key="i">
-                                                <td>
-                                                    <span class="tooltip" 
-                                                          :data-tooltip="'model\'s ' + formatStatName(sourceStat) + ' ' + (statWeightMatrix[sourceStat][i] > 0 ? 'increases' : statWeightMatrix[sourceStat][i] < 0 ? 'decreases' : 'has no effect on') + ' cost of ' + formatStatName(getStatAtIndex(i))">
-                                                        <input type="number" 
-                                                               x-model.number="statWeightMatrix[sourceStat][i]" 
-                                                               min="-2" 
-                                                               max="2" 
-                                                               step="0.1"
-                                                               class="weight-input"
-                                                               :class="{'active-weight': statWeightMatrix[sourceStat][i] > 0, 'negative-weight': statWeightMatrix[sourceStat][i] < 0}">
-                                                    </span>
-                                                </td>
-                                            </template>
-                                        </tr>
-                                    </template>
-                                </tbody>
+                                </template>
                             </table>
                         </div>
 
-                        <div class="weight-description">
-                            <h5>Current Dependencies:</h5>
-                            <ul class="dependency-list">
-                                <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
-                                    <template x-for="(weight, i) in weights" :key="i">
-                                        <li x-show="weight != 0">
-                                            <span x-text="formatStatName(sourceStat)"></span> 
-                                            <span x-text="weight > 0 ? 'increases' : 'decreases'"></span> value of 
-                                            <span x-text="formatStatName(getStatAtIndex(i))"></span> 
-                                            with weight <span x-text="Math.abs(weight)"></span>
-                                        </li>
+                        <!-- Weight Matrix Editor -->
+                        <div class="weight-matrix-container" x-show="currentStat === 'weights'">
+                            <h4>Stat Weight Matrix</h4>
+                            <p class="matrix-info">This matrix defines how stats affect each other. Each row represents a source stat, and each column represents a target stat. The value at the intersection represents the influence of the source on the target.</p>
+                            
+                            <div class="weight-matrix-actions">
+                                <button @click="saveWeightMatrix" class="save-weights-btn">Save Weight Matrix</button>
+                                <button @click="resetWeightMatrix" class="reset-weights-btn">Reset to Default</button>
+                                <button @click="includeWeightMatrixInExport = !includeWeightMatrixInExport" 
+                                        class="toggle-weights-btn"
+                                        x-bind:class="{'active': includeWeightMatrixInExport}">
+                                    <span x-text="includeWeightMatrixInExport ? 'Included in Export' : 'Click to include in Export'"></span>
+                                </button>
+                            </div>
+                            
+                            <div class="weight-matrix-scroll">
+                                <table class="weight-matrix-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Source ↓ / Target →</th>
+                                            <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
+                                                <th class="tooltip" :data-tooltip="'Base cost multiplier for ' + formatStatName(statName)">
+                                                    <div x-text="getStatShortName(statName)"></div>
+                                                    <input type="number"
+                                                           x-model.number="statMultipliers[statName]"
+                                                           min="0"
+                                                           step="0.1"
+                                                           class="weight-input"
+                                                           style="margin-top: 2px;"
+                                                           @input="$nextTick(() => $forceUpdate())">
+                                                </th>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
+                                            <tr>
+                                                <td x-text="getStatShortName(sourceStat)" class="weight-source-stat tooltip" :data-tooltip="'This row controls how much ' + formatStatName(sourceStat) + ' adds to the cost of each stat'"></td>
+                                                <template x-for="(weight, i) in weights" :key="i">
+                                                    <td>
+                                                        <span class="tooltip" 
+                                                              :data-tooltip="'model\'s ' + formatStatName(sourceStat) + ' ' + (statWeightMatrix[sourceStat][i] > 0 ? 'increases' : statWeightMatrix[sourceStat][i] < 0 ? 'decreases' : 'has no effect on') + ' cost of ' + formatStatName(getStatAtIndex(i))">
+                                                            <input type="number" 
+                                                                   x-model.number="statWeightMatrix[sourceStat][i]" 
+                                                                   min="-2" 
+                                                                   max="2" 
+                                                                   step="0.1"
+                                                                   class="weight-input"
+                                                                   :class="{'active-weight': statWeightMatrix[sourceStat][i] > 0, 'negative-weight': statWeightMatrix[sourceStat][i] < 0}">
+                                                        </span>
+                                                    </td>
+                                                </template>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="weight-description">
+                                <h5>Current Dependencies:</h5>
+                                <ul class="dependency-list">
+                                    <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
+                                        <template x-for="(weight, i) in weights" :key="i">
+                                            <li x-show="weight != 0">
+                                                <span x-text="formatStatName(sourceStat)"></span> 
+                                                <span x-text="weight > 0 ? 'increases' : 'decreases'"></span> value of 
+                                                <span x-text="formatStatName(getStatAtIndex(i))"></span> 
+                                                with weight <span x-text="Math.abs(weight)"></span>
+                                            </li>
+                                        </template>
                                     </template>
-                                </template>
-                            </ul>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <br/>
-                
-                
-                <div class="import-export-container">
-                    <button @click="addModel">Duplicate Model</button>
-                    <button class="export-btn" @click="exportModels">Export to CSV</button>
-                    <label class="import-btn" for="importInput">Import from CSV</label>
-                    <input type="file" id="importInput" accept=".csv" @change="importModels($event)">
-                </div>
-                
-                <div class="total-points">
-                    Total Points: <span x-text="getTotalPoints()"></span>
-                </div>
-                
-                
             </div>
         </div>
 
