@@ -127,19 +127,21 @@
         
         .tooltip:hover::after {
             content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #33333398;
+            position: fixed; /* Change from absolute to fixed */
+            z-index: 10000; /* Higher than header's z-index of 1000 */
+            background-color: #3333335b;
             color: white;
             text-align: center;
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 0.8em;
             white-space: nowrap;
-            z-index: 1;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            /* Custom positioning calculation based on hover position */
+            /* These will be calculated by JS */
+            top: 0;
+            left: 0;
+            transform: none;
         }
         
         /* Weight matrix specific tooltip styles */
@@ -166,6 +168,7 @@
         }
         
         .export-btn {
+            margin: 10px 0;
         }
         
         .export-btn:hover {
@@ -265,10 +268,24 @@
         .config-btn {
             background-color: #3a9989;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .config-btn:hover {
             background-color: #88c0b2;
+        }
+        
+        .arrow-icon {
+            display: inline-block;
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+        
+        .arrow-up {
+            transform: rotate(180deg);
         }
 
         .point-config-tables {
@@ -575,7 +592,7 @@
             display: flex;
             gap: 20px; /* Space between columns */
             position: relative; /* For absolute positioning context */
-            height: calc(100vh - 70px); /* Take up full viewport height minus header */
+            height: calc(100vh - 10px); /* Take up full viewport height minus header */
             overflow: hidden;
         }
 
@@ -656,10 +673,32 @@
         
         .models-table-container tbody {
             display: block;
-            max-height: 250px; /* Height for approximately 3 rows */
+            max-height: 200px; /* Height for approximately 3 rows */
             overflow-y: auto;
             overflow-x: hidden;
             transition: max-height 0.3s ease;
+            /* Custom scrollbar styling */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #aaa #f0f0f0; /* Firefox */
+        }
+        
+        /* Webkit scrollbar styling (Chrome, Safari, Edge) */
+        .models-table-container tbody::-webkit-scrollbar {
+            width: 2px;
+        }
+        
+        .models-table-container tbody::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+        
+        .models-table-container tbody::-webkit-scrollbar-thumb {
+            background-color: #aaa;
+            border-radius: 10px;
+            border: 1px solid transparent;
+        }
+        
+        .models-table-container tbody::-webkit-scrollbar-thumb:hover {
+            background-color: #888;
         }
         
         /* Expanded table when point config is hidden */
@@ -703,7 +742,7 @@
             top: 0;
             z-index: 40; /* Lower than the table container */
             overflow-y: auto; /* Allow scrolling */
-            height: calc(45vh); /* Fixed height based on viewport minus header and table */
+            height: calc(60vh); /* Fixed height based on viewport minus header and table */
             padding-bottom: 1px; /* Add extra padding at bottom to ensure content is visible */
         }
     </style>
@@ -1608,8 +1647,8 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <button class="delete-btn" @click="removeModel(index)" :disabled="models.length === 1">X</button>
-                                        <button @click="duplicateModel(index)">C</button>
+                                        <button class="delete-btn tooltip" @click="removeModel(index)" :disabled="models.length === 1" data-tooltip="Delete this model">X</button>
+                                        <button class="tooltip" @click="duplicateModel(index)" data-tooltip="Create a copy of this model">C</button>
                                     </td>
                                 </tr>
                             </template>
@@ -1624,6 +1663,7 @@
                     
                     <button @click="showPointConfig = !showPointConfig" class="config-btn">
                         <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
+                        <span class="arrow-icon" :class="{'arrow-up': !showPointConfig}">▼</span>
                     </button>
                 </div>
                 
@@ -1849,5 +1889,50 @@
             </div>
         </div>
     </div>
+
+    <!-- Add tooltip positioning script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.addEventListener('mouseover', function(e) {
+                // Check if we're hovering over a tooltip element
+                if (e.target.classList.contains('tooltip') || e.target.closest('.tooltip')) {
+                    const tooltipEl = e.target.classList.contains('tooltip') ? e.target : e.target.closest('.tooltip');
+                    
+                    // Create a function to position the tooltip when it appears
+                    tooltipEl.addEventListener('mouseenter', function() {
+                        // Small delay to allow the pseudo-element to be created
+                        setTimeout(() => {
+                            // Get tooltip dimensions (have to use a hack for pseudo-elements)
+                            // Add a temporary data attribute to identify this specific tooltip
+                            const uniqueId = 'tooltip-' + Math.random().toString(36).substring(2);
+                            tooltipEl.setAttribute('data-tooltip-id', uniqueId);
+                            
+                            // Get position of the tooltip element (not the cursor)
+                            const rect = tooltipEl.getBoundingClientRect();
+                            // Use the element's top and horizontal center for positioning
+                            const tooltipTop = Math.max(rect.top - 40, 60); // Position above the element with minimum 60px from top
+                            const tooltipLeft = rect.left + (rect.width / 2) - 70; // Center horizontally
+                            
+                            // Create a style element to get the pseudo-element
+                            const style = document.createElement('style');
+                            style.innerHTML = `
+                                .tooltip[data-tooltip-id="${uniqueId}"]::after {
+                                    top: ${tooltipTop}px !important; 
+                                    left: ${tooltipLeft}px !important;
+                                }
+                            `;
+                            document.head.appendChild(style);
+                            
+                            // Clean up after tooltip is no longer hovered
+                            tooltipEl.addEventListener('mouseleave', function() {
+                                document.head.removeChild(style);
+                                tooltipEl.removeAttribute('data-tooltip-id');
+                            }, { once: true });
+                        }, 10);
+                    });
+                }
+            }, true);
+        });
+    </script>
 </body>
 </html> 
