@@ -10,6 +10,14 @@
             font-family: Arial, sans-serif;
             margin: 0 auto;
             padding: 20px;
+            max-width: 1000px;
+            background-color: #f0f0f0;
+        }
+        
+        body > div {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
         }
         table {
             margin: 0 auto;
@@ -28,7 +36,7 @@
             width: 60px;
             font-weight: bold;
         }
-        th:nth-child(2), td:nth-child(2) {
+        .skill-input-wrapper th:nth-child(2), .skill-input-wrapper td:nth-child(2) {
             width: 120px;
         }
         th:not(:first-child):not(:nth-child(2)), td:not(:first-child):not(:nth-child(2)) {
@@ -38,19 +46,19 @@
             width: 100%;
             box-sizing: border-box;
         }
-        /* Hide native spinner buttons on number inputs */
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { 
+        /* Hide native spinner buttons only on number inputs within skill-input-wrapper */
+        .skill-input-wrapper input[type="number"]::-webkit-inner-spin-button, 
+        .skill-input-wrapper input[type="number"]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
             margin: 0; 
         }
-        input[type="number"] { 
+        .skill-input-wrapper input[type="number"] { 
             -moz-appearance: textfield; 
         }
         button {
             margin: 10px 0;
-            padding: 8px 16px;
-            background-color: #4CAF50;
+            padding: 4px 8px;
+            background-color: #adadad;
             color: white;
             border: none;
             border-radius: 4px;
@@ -83,7 +91,7 @@
             bottom: 100%;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #333;
+            background-color: #33333398;
             color: white;
             text-align: center;
             padding: 5px 10px;
@@ -94,16 +102,15 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
-        .tooltip:hover::before {
-            content: "";
-            position: absolute;
-            bottom: 90%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 5px;
-            border-style: solid;
-            border-color: #333 transparent transparent transparent;
-            z-index: 1;
+        /* Weight matrix specific tooltip styles */
+        .weight-input.tooltip:hover::after {
+            bottom: auto;
+            left: 100%;
+            top: 0;
+            transform: translateX(5px);
+            white-space: nowrap;
+            width: auto;
+            z-index: 100;
         }
         
         /* File input styling */
@@ -119,18 +126,16 @@
         }
         
         .export-btn {
-            background-color: #2196F3;
         }
         
         .export-btn:hover {
-            background-color: #0b7dda;
         }
         
         .import-btn {
             background-color: #ff9800;
             /* Add button-specific styles to make the label look like a button */
             margin: 10px 0;
-            padding: 8px 16px;
+            padding: 4px 8px;
             color: white;
             border: none;
             border-radius: 4px;
@@ -215,6 +220,312 @@
         .point-formula-table tr:hover {
             background-color: #f1f1f1;
         }
+
+        /* Point value configuration styles */
+        .config-btn {
+            background-color: #b73a3a;
+            margin-bottom: 20px;
+        }
+
+        .config-btn:hover {
+            background-color: #b13535;
+        }
+
+        .point-config-tables {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .point-config-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .point-config-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        #importPointValues {
+            display: none;
+        }
+
+        .point-config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-config {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-config h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .config-table th,
+        .config-table td {
+            padding: 8px;
+            text-align: center;
+        }
+
+        .point-input {
+            width: 60px;
+            padding: 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .stat-selector {
+            margin-bottom: 10px;
+        }
+
+        .stat-select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .point-value-row {
+            margin-bottom: 5px;
+        }
+
+        .stat-nav {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-nav-label {
+            font-weight: bold;
+        }
+
+        .stat-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .stat-button {
+            padding: 8px 16px;
+            background-color: #a0a0a0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .stat-button:hover {
+            background-color: #15ff00;
+        }
+
+        .active {
+            background-color: #15b61a;
+            color: white;
+        }
+
+        .single-stat-config {
+            margin-bottom: 20px;
+        }
+
+        .single-stat-config .config-table {
+            width: auto;
+            margin: 0 auto;
+        }
+
+        .action-cell {
+            text-align: center;
+        }
+
+        .adjust-btn {
+            margin: 0 5px;
+            padding: 2px 5px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .adjust-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Weight Matrix Editor styles */
+        .weight-matrix-container {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .weight-matrix-scroll {
+
+        }
+
+        .weight-matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .weight-matrix-table th, .weight-matrix-table td {
+            padding: 8px;
+            text-align: center;
+        }
+
+        .weight-source-stat {
+            font-weight: bold;
+        }
+
+        .weight-input {
+            width: 50px;
+            padding: 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .active-weight {
+            background-color: #25a129;
+            color: white;
+        }
+
+        .negative-weight {
+            background-color: #a12525;
+            color: white;
+        }
+
+        .weight-description {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .dependency-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .dependency-list li {
+            margin-bottom: 5px;
+        }
+
+        /* Point calculation breakdown styles */
+        .point-breakdown-toggle {
+            cursor: pointer;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .breakdown-arrow {
+            font-size: 10px;
+            color: #555;
+        }
+
+        .point-breakdown {
+            position: absolute;
+            z-index: 100;
+            width: 220px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .breakdown-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .breakdown-base {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .adjusted-value {
+            color: #4CAF50;
+            margin-left: 5px;
+        }
+
+        .breakdown-total {
+            margin-top: 5px;
+            border-top: 1px solid #ddd;
+            padding-top: 5px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .matrix-info {
+            margin-bottom: 10px;
+            font-size: 0.8em;
+            color: #555;
+        }
+
+        .weight-matrix-actions {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .save-weights-btn {
+            background-color: #2196F3;
+        }
+
+        .save-weights-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .reset-weights-btn {
+        }
+
+        .reset-weights-btn:hover {
+        }
+
+        .toggle-weights-btn {
+            padding: 4px 8px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .toggle-weights-btn:hover {
+        }
+
+        .active {
+            background-color: #23aa28;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -223,18 +534,50 @@
     <div x-data="{
         models: [
             {
-                name: '',
+                name: 'Imperial Guardsman',
                 movement: 6,
                 weaponSkill: 3,
-                ballisticSkill: '3+',
+                ballisticSkill: '4+',
                 strength: 3,
                 toughness: 3,
                 wounds: 1,
+                initiative: 3,
                 attacks: 1,
                 leadership: 7,
-                save: '5+'
+                save: '5+',
+                invulnSave: '-'
+            },
+            {
+                name: 'Space Marine',
+                movement: 6,
+                weaponSkill: 3,
+                ballisticSkill: '3+',
+                strength: 4,
+                toughness: 4,
+                wounds: 1,
+                initiative: 4,
+                attacks: 1,
+                leadership: 8,
+                save: '3+',
+                invulnSave: '-'
+            },
+            {
+                name: 'Ork Warboy',
+                movement: 5,
+                weaponSkill: 3,
+                ballisticSkill: '5+',
+                strength: 3,
+                toughness: 4,
+                wounds: 1,
+                initiative: 2,
+                attacks: 2,
+                leadership: 6,
+                save: '6+',
+                invulnSave: '-'
             }
         ],
+        showPointConfig: false,
+        currentStat: 'weights',
         
         // Point value lookup tables for each stat
         pointValueLookups: {
@@ -253,19 +596,18 @@
                 12: 9
             },
             weaponSkill: {
-                1: 15,
-                2: 12,
-                3: 9,
-                4: 6,
-                5: 3,
-                6: 0,
-                7: -3,
-                8: -6,
-                9: -9,
-                10: -12
+                1: 1,
+                2: 2,
+                3: 3,
+                4: 4,
+                5: 5,
+                6: 6,
+                7: 7,
+                8: 8,
+                9: 9,
+                10: 10
             },
             ballisticSkill: {
-                '1+': 15,
                 '2+': 12,
                 '3+': 9,
                 '4+': 6,
@@ -309,6 +651,18 @@
                 9: 40,
                 10: 45
             },
+            initiative: {
+                1: -3,
+                2: -1,
+                3: 0,
+                4: 1,
+                5: 3,
+                6: 5,
+                7: 7,
+                8: 10,
+                9: 13,
+                10: 16
+            },
             attacks: {
                 1: 0,
                 2: 4,
@@ -334,13 +688,35 @@
                 10: 13
             },
             save: {
-                '1+': 24,
                 '2+': 20,
                 '3+': 16,
                 '4+': 12,
                 '5+': 8,
                 '6+': 4,
                 '-': 0
+            },
+            invulnSave: {
+                '2+': 25,
+                '3+': 20,
+                '4+': 15,
+                '5+': 10,
+                '6+': 5,
+                '-': 0
+            }
+        },
+        
+        // Initialize the component
+        init() {
+            // Load saved point values if they exist
+            const savedPointValues = localStorage.getItem('pointValueLookups');
+            if (savedPointValues) {
+                this.pointValueLookups = JSON.parse(savedPointValues);
+            }
+            
+            // Load saved weight matrix if it exists
+            const savedWeightMatrix = localStorage.getItem('statWeightMatrix');
+            if (savedWeightMatrix) {
+                this.statWeightMatrix = JSON.parse(savedWeightMatrix);
             }
         },
         
@@ -354,9 +730,11 @@
                 strength: lastModel.strength,
                 toughness: lastModel.toughness,
                 wounds: lastModel.wounds,
+                initiative: lastModel.initiative,
                 attacks: lastModel.attacks,
                 leadership: lastModel.leadership,
-                save: lastModel.save
+                save: lastModel.save,
+                invulnSave: lastModel.invulnSave
             };
             this.models.push(newModel);
         },
@@ -370,23 +748,71 @@
         },
         
         calculatePoints(model) {
-            let points = 0;
+            // Phase 1: Calculate base values
+            const baseValues = {
+                movement: this.getBasePoints('movement', model.movement),
+                weaponSkill: this.getBasePoints('weaponSkill', model.weaponSkill),
+                ballisticSkill: this.getBasePoints('ballisticSkill', model.ballisticSkill),
+                strength: this.getBasePoints('strength', model.strength),
+                toughness: this.getBasePoints('toughness', model.toughness),
+                wounds: this.getBasePoints('wounds', model.wounds),
+                initiative: this.getBasePoints('initiative', model.initiative),
+                attacks: this.getBasePoints('attacks', model.attacks),
+                leadership: this.getBasePoints('leadership', model.leadership),
+                save: this.getBasePoints('save', model.save),
+                invulnSave: this.getBasePoints('invulnSave', model.invulnSave)
+            };
             
-            // Base points for having a model
-            points += 10;
+            // Phase 2: Apply weight matrix adjustments
+            const adjustedValues = this.applyWeightMatrix(baseValues, model);
             
-            // Points for each stat using the point value functions
-            points += this.getMovementPoints(model.movement);
-            points += this.getWeaponSkillPoints(model.weaponSkill);
-            points += this.getBallisticSkillPoints(model.ballisticSkill);
-            points += this.getStrengthPoints(model.strength);
-            points += this.getToughnessPoints(model.toughness);
-            points += this.getWoundsPoints(model.wounds);
-            points += this.getAttacksPoints(model.attacks);
-            points += this.getLeadershipPoints(model.leadership);
-            points += this.getSavePoints(model.save);
+            // Return raw total points
+            return 10 + Object.values(adjustedValues).reduce((a, b) => a + b, 0);
+        },
+
+        getPointBreakdown(model) {
+            // Phase 1: Calculate base values
+            const baseValues = {
+                movement: this.getBasePoints('movement', model.movement),
+                weaponSkill: this.getBasePoints('weaponSkill', model.weaponSkill),
+                ballisticSkill: this.getBasePoints('ballisticSkill', model.ballisticSkill),
+                strength: this.getBasePoints('strength', model.strength),
+                toughness: this.getBasePoints('toughness', model.toughness),
+                wounds: this.getBasePoints('wounds', model.wounds),
+                initiative: this.getBasePoints('initiative', model.initiative),
+                attacks: this.getBasePoints('attacks', model.attacks),
+                leadership: this.getBasePoints('leadership', model.leadership),
+                save: this.getBasePoints('save', model.save),
+                invulnSave: this.getBasePoints('invulnSave', model.invulnSave)
+            };
             
-            return points;
+            // Phase 2: Apply weight matrix adjustments
+            const adjustedValues = this.applyWeightMatrix(baseValues, model);
+            
+            // Return calculation details
+            return {
+                baseValues: {...baseValues},
+                adjustedValues: {...adjustedValues},
+                total: 10 + Object.values(adjustedValues).reduce((a, b) => a + b, 0)
+            };
+        },
+
+        getRelativePoints(model, index) {
+            if (index === 0) {
+                return (5).toFixed(1); // First model is always 5, ensure consistent formatting
+            }
+            if (this.models.length < 1) {
+                return '-'; // Should not happen, but safeguard
+            }
+
+            const firstModelPoints = this.calculatePoints(this.models[0]);
+            const currentModelPoints = this.calculatePoints(model);
+
+            if (firstModelPoints <= 0) { // Check for <= 0 to handle negative points safely
+                return '-'; // Avoid division by zero or negative base
+            }
+
+            return ((currentModelPoints / firstModelPoints) * 5).toFixed(1); // Calculate relative points, rounded
         },
         
         getTotalPoints() {
@@ -423,6 +849,10 @@
             return this.pointValueLookups.wounds[value];
         },
         
+        getInitiativePoints(value) {
+            return this.pointValueLookups.initiative[value];
+        },
+        
         getAttacksPoints(value) {
             return this.pointValueLookups.attacks[value];
         },
@@ -438,6 +868,15 @@
             // Parse the value, removing the '+' if present
             const parsedValue = value.replace('+', '');
             return this.pointValueLookups.save[parsedValue + '+'];
+        },
+        
+        getInvulnSavePoints(value) {
+            if (!value || value === '-') {
+                return this.pointValueLookups.invulnSave['-'];
+            }
+            // Parse the value, removing the '+' if present
+            const parsedValue = value.replace('+', '');
+            return this.pointValueLookups.invulnSave[parsedValue + '+'];
         },
 
         // Simple function to ensure skill values always have a + sign
@@ -482,7 +921,7 @@
             }
             
             const value = parseInt(model[prop]);
-            if (!isNaN(value) && value > 1) {  // Floor at 1+
+            if (!isNaN(value) && value > 2) {  // Floor at 2+
                 model[prop] = (value - 1) + '+';
             }
         },
@@ -490,7 +929,7 @@
         // Export models to CSV
         exportModels() {
             // CSV header
-            let csv = 'Name,Movement,Weapon Skill,Ballistic Skill,Strength,Toughness,Wounds,Attacks,Leadership,Save\n';
+            let csv = 'Name,Movement,Weapon Skill,Ballistic Skill,Strength,Toughness,Wounds,Initiative,Attacks,Leadership,Save,Invuln Save\n';
             
             // Add each model as a row
             this.models.forEach(model => {
@@ -502,9 +941,11 @@
                     model.strength,
                     model.toughness,
                     model.wounds,
+                    model.initiative,
                     model.attacks,
                     model.leadership,
-                    model.save
+                    model.save,
+                    model.invulnSave
                 ].join(',') + '\n';
             });
             
@@ -544,9 +985,11 @@
                             strength: parseInt(values[4]),
                             toughness: parseInt(values[5]),
                             wounds: parseInt(values[6]),
-                            attacks: parseInt(values[7]),
-                            leadership: parseInt(values[8]),
-                            save: values[9]
+                            initiative: parseInt(values[7]),
+                            attacks: parseInt(values[8]),
+                            leadership: parseInt(values[9]),
+                            save: values[10],
+                            invulnSave: values[11]
                         };
                     });
                     
@@ -561,30 +1004,278 @@
                 event.target.value = '';
             };
             reader.readAsText(file);
-        }
+        },
+
+        // Export point values to JSON
+        exportPointValues() {
+            console.log(this.pointValueLookups);
+            const dataToExport = {
+                pointValueLookups: this.pointValueLookups
+            };
+            
+            // Include weight matrix if option is enabled
+            if (this.includeWeightMatrixInExport) {
+                dataToExport.statWeightMatrix = this.statWeightMatrix;
+            }
+            
+            const data = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'point_values.json');
+            a.click();
+            URL.revokeObjectURL(url);
+        },
+
+        // Import point values from JSON
+        importPointValues(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    // Validate point value lookups
+                    if (imported.pointValueLookups) {
+                        const requiredStats = [
+                            'movement', 'weaponSkill', 'ballisticSkill', 'strength',
+                            'toughness', 'wounds', 'attacks', 'leadership', 'save', 'invulnSave'
+                        ];
+                        
+                        if (requiredStats.every(stat => imported.pointValueLookups[stat])) {
+                            this.pointValueLookups = imported.pointValueLookups;
+                            localStorage.setItem('pointValueLookups', JSON.stringify(imported.pointValueLookups));
+                            
+                            // Import weight matrix if available
+                            if (imported.statWeightMatrix) {
+                                if (confirm('The imported file contains a weight matrix. Do you want to import it as well?')) {
+                                    this.statWeightMatrix = imported.statWeightMatrix;
+                                    localStorage.setItem('statWeightMatrix', JSON.stringify(imported.statWeightMatrix));
+                                }
+                            }
+                            
+                            alert('Point values imported successfully!');
+                        } else {
+                            alert('Invalid point values file. Missing required stats.');
+                        }
+                    } else {
+                        alert('Invalid point values file. Missing pointValueLookups object.');
+                    }
+                } catch (error) {
+                    alert('Error importing point values. Make sure it is a valid JSON file.');
+                    console.error('Import error:', error);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        },
+
+        formatStatName(stat) {
+            return stat.charAt(0).toUpperCase() + stat.slice(1).replace(/([A-Z])/g, ' $1');
+        },
+
+        statWeightMatrix: {
+            // Effect of row stat on column stat
+            //           M    WS   BS   S    T    W    I    A    Ld   Sv   Inv
+            movement:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
+            weaponSkill:[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
+            ballisticSkill:[0,0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
+            strength:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Strength is a terminal node
+            toughness:  [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
+            wounds:     [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Wounds is a terminal node
+            initiative: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Initiative affects Attacks
+            attacks:    [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Attacks affects Strength
+            leadership: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Leadership is a terminal node
+            save:       [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Save affects Wounds
+            invulnSave: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0]    // Invuln Save affects Wounds
+        },
+
+        applyWeightMatrix(baseValues, model) {
+            const statOrder = ['movement', 'weaponSkill', 'ballisticSkill', 'strength', 
+                               'toughness', 'wounds', 'initiative', 'attacks', 'leadership', 'save', 'invulnSave'];
+            const adjustedValues = {...baseValues};
+            
+            // Apply adjustments in correct order
+            for (const [targetIdx, targetStat] of statOrder.entries()) {
+                let adjustment = 0;
+                
+                // Calculate influence from each source stat
+                for (const sourceStat of statOrder) {
+                    // Get the weight from source stat to target stat
+                    const weight = this.statWeightMatrix[sourceStat][targetIdx];
+                    
+                    if (weight !== 0) {
+                        // Use raw stat value to determine influence
+                        const rawValue = model[sourceStat];
+                        const baseValue = baseValues[sourceStat];
+                        adjustment += this.calculateInfluence(baseValue, weight, sourceStat);
+                    }
+                }
+                
+                // Apply adjustment with diminishing returns
+                adjustedValues[targetStat] = baseValues[targetStat] * (1 + adjustment);
+            }
+            
+            return adjustedValues;
+        },
+
+        calculateInfluence(rawValue, weight, sourceStat) {
+            return weight * rawValue;
+
+            // For basic stats like movement, strength, etc.
+            if (['movement', 'weaponSkill', 'strength', 'toughness', 'wounds', 'attacks', 'leadership'].includes(sourceStat)) {
+                // Convert value to percentage of max value (1-10 or 1-12 for movement)
+                const maxValue = sourceStat === 'movement' ? 12 : 10;
+                const percentage = rawValue / maxValue;
+                
+                // Apply weight with diminishing returns
+                return weight * rawValue;
+            } 
+            // For stats with plus signs like BS, Save, Invuln Save
+            else if (['ballisticSkill', 'save', 'invulnSave'].includes(sourceStat)) {
+                // Convert 2+, 3+, etc. to numerical value (inverted so 2+ is better than 6+)
+                let value;
+                if (rawValue === '-') {
+                    value = 0; // No influence for '-' values
+                } else {
+                    // Extract number from '2+', '3+', etc.
+                    const parsedValue = parseInt(rawValue.replace('+', ''));
+                    if (!isNaN(parsedValue)) {
+                        // Invert so 2+ is better (value 0.8) than 6+ (value 0.2)
+                        value = (7 - parsedValue) / 5;
+                    } else {
+                        value = 0;
+                    }
+                }
+                
+                // Apply weight
+                return weight * rawValue;
+            }
+            
+            return 0; // Default fallback
+        },
+
+        getBasePoints(stat, value) {
+            // Handle special cases for stats with plus signs
+            if (['ballisticSkill', 'save', 'invulnSave'].includes(stat)) {
+                if (!value || value === '-') {
+                    return this.pointValueLookups[stat]['-'];
+                }
+                // Parse the value, removing the '+' if present
+                const parsedValue = value.replace('+', '');
+                return this.pointValueLookups[stat][parsedValue + '+'];
+            }
+            
+            // For regular numeric stats
+            return this.pointValueLookups[stat][value];
+        },
+
+        getStatShortName(stat) {
+            const shortNames = {
+                movement: 'M',
+                weaponSkill: 'WS',
+                ballisticSkill: 'BS',
+                strength: 'S',
+                toughness: 'T',
+                wounds: 'W',
+                initiative: 'I',
+                attacks: 'A',
+                leadership: 'Ld',
+                save: 'Sv',
+                invulnSave: 'Inv'
+            };
+            return shortNames[stat] || stat;
+        },
+
+        getStatAtIndex(index) {
+            const stats = ['movement', 'weaponSkill', 'ballisticSkill', 'strength', 'toughness', 'wounds', 'initiative', 'attacks', 'leadership', 'save', 'invulnSave'];
+            return stats[index];
+        },
+
+        // Save the current weight matrix to localStorage
+        saveWeightMatrix() {
+            localStorage.setItem('statWeightMatrix', JSON.stringify(this.statWeightMatrix));
+            alert('Weight matrix saved successfully!');
+        },
+
+        // Reset the weight matrix to default values
+        resetWeightMatrix() {
+            if (confirm('Are you sure you want to reset the weight matrix to default values?')) {
+                this.statWeightMatrix = {
+                    // Effect of row stat on column stat
+                    //           M    WS   BS   S    T    W    I    A    Ld   Sv   Inv
+                    movement:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
+                    weaponSkill:[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
+                    ballisticSkill:[0,0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
+                    strength:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Strength is a terminal node
+                    toughness:  [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
+                    wounds:     [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Wounds is a terminal node
+                    initiative: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Initiative affects Attacks
+                    attacks:    [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Attacks affects Strength
+                    leadership: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Leadership is a terminal node
+                    save:       [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Save affects Wounds
+                    invulnSave: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0]    // Invuln Save affects Wounds
+                };
+            }
+        },
+
+        includeWeightMatrixInExport: false
     }">
         <div>
+
+
             <table>
                 <thead>
                     <tr>
                         <th class="tooltip" data-tooltip="Points cost">Pts</th>
                         <th>Name</th>
                         <th class="tooltip" data-tooltip="Movement: How far the model can move in inches">M</th>
-                        <th class="tooltip" data-tooltip="Weapon Skill: Ability in close combat (lower is better)">WS</th>
+                        <th class="tooltip" data-tooltip="Weapon Skill: Ability in close combat">WS</th>
                         <th class="tooltip" data-tooltip="Ballistic Skill: Accuracy with ranged weapons (lower is better)">BS</th>
-                        <th class="tooltip" data-tooltip="Strength: Physical power of the model">S</th>
-                        <th class="tooltip" data-tooltip="Toughness: Resilience to damage">T</th>
+                        <th class="tooltip" data-tooltip="Strength: Physical power of the model in combat">S</th>
+                        <th class="tooltip" data-tooltip="Toughness: Difficulty to wound the model">T</th>
                         <th class="tooltip" data-tooltip="Wounds: Amount of damage the model can sustain">W</th>
+                        <th class="tooltip" data-tooltip="Initiative: Speed and combat reaction time">I</th>
                         <th class="tooltip" data-tooltip="Attacks: Number of close combat attacks">A</th>
                         <th class="tooltip" data-tooltip="Leadership: Bravery and morale of the model">Ld</th>
                         <th class="tooltip" data-tooltip="Save: Armor save value (lower is better)">Sv</th>
+                        <th class="tooltip" data-tooltip="Invulnerable Save: Special save that cannot be modified (lower is better)">Inv</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <template x-for="(model, index) in models" :key="index">
                         <tr>
-                            <td><span x-text="calculatePoints(model)"></span></td>
+                            <td><span x-text="getRelativePoints(model, index)"></span>
+                                <div class="point-breakdown-toggle" @click="model.showPointBreakdown = !model.showPointBreakdown">
+                                    <span x-text="model.showPointBreakdown ? '▲' : '▼'" class="breakdown-arrow"></span>
+                                </div>
+                                <div class="point-breakdown" x-show="model.showPointBreakdown" x-data="{ breakdown: null }" x-init="breakdown = getPointBreakdown(model)">
+                                    <div class="breakdown-header">Absolute Point Calculation:</div>
+                                    <div class="breakdown-base">Base Cost: 10</div>
+                                    <template x-if="breakdown">
+                                        <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
+                                            <div class="breakdown-item">
+                                                <span x-text="formatStatName(stat) + ':'"></span>
+                                                <span x-text="baseValue.toFixed(1)"></span>
+                                                <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
+                                                    <span class="adjusted-value" 
+                                                          x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <div class="breakdown-total">
+                                            Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="!breakdown">
+                                        <div>Loading breakdown...</div>
+                                    </template>
+                                </div>
+                            </td>
                             <td><input type="text" x-model="model.name" placeholder="Model name"></td>
                             <td>
                                 <div class="skill-input-wrapper">
@@ -642,6 +1333,15 @@
                             </td>
                             <td>
                                 <div class="skill-input-wrapper">
+                                    <input type="number" x-model.number="model.initiative" min="1" max="10">
+                                    <div class="spinner-buttons">
+                                        <button class="spinner-button" @click="incrementNumeric(model, 'initiative')" title="Increase">▲</button>
+                                        <button class="spinner-button" @click="decrementNumeric(model, 'initiative')" title="Decrease">▼</button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="skill-input-wrapper">
                                     <input type="number" x-model.number="model.attacks" min="1" max="10">
                                     <div class="spinner-buttons">
                                         <button class="spinner-button" @click="incrementNumeric(model, 'attacks')" title="Increase">▲</button>
@@ -668,16 +1368,189 @@
                                 </div>
                             </td>
                             <td>
+                                <div class="skill-input-wrapper">
+                                    <input type="text" x-model="model.invulnSave" @blur="ensurePlusSign(model, 'invulnSave')">
+                                    <div class="spinner-buttons">
+                                        <button class="spinner-button" @click="incrementSkill(model, 'invulnSave')" title="Increase">▲</button>
+                                        <button class="spinner-button" @click="decrementSkill(model, 'invulnSave')" title="Decrease">▼</button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
                                 <button class="delete-btn" @click="removeModel(index)" :disabled="models.length === 1">delete</button>
                             </td>
                         </tr>
                     </template>
                 </tbody>
             </table>
+            <button @click="showPointConfig = !showPointConfig" class="config-btn">
+                <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
+            </button>
             
-            <button @click="addModel">Duplicate Model</button>
+            <div x-show="showPointConfig" class="point-config-tables">
+                <div class="point-config-header">
+                    <h3>Point Value Configuration</h3>
+                    <div class="point-config-actions">
+                        <button @click="exportPointValues" class="export-btn">Export Values</button>
+                        <label class="import-btn" for="importPointValues">Import Values</label>
+                        <input type="file" id="importPointValues" @change="importPointValues($event)" accept=".json">
+                    </div>
+                </div>
+
+                <div class="stat-nav">
+                    <div class="stat-nav-label">Current Stat:</div>
+                    <div class="stat-buttons">
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'movement'"
+                            x-bind:class="{'active': currentStat === 'movement'}">M</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'weaponSkill'"
+                            x-bind:class="{'active': currentStat === 'weaponSkill'}">WS</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'ballisticSkill'"
+                            x-bind:class="{'active': currentStat === 'ballisticSkill'}">BS</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'strength'"
+                            x-bind:class="{'active': currentStat === 'strength'}">S</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'toughness'"
+                            x-bind:class="{'active': currentStat === 'toughness'}">T</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'wounds'"
+                            x-bind:class="{'active': currentStat === 'wounds'}">W</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'attacks'"
+                            x-bind:class="{'active': currentStat === 'attacks'}">A</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'leadership'"
+                            x-bind:class="{'active': currentStat === 'leadership'}">Ld</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'save'"
+                            x-bind:class="{'active': currentStat === 'save'}">Sv</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'invulnSave'"
+                            x-bind:class="{'active': currentStat === 'invulnSave'}">Inv</button>
+                        <button 
+                            class="stat-button" 
+                            x-on:click="currentStat = 'weights'"
+                            x-bind:class="{'active': currentStat === 'weights'}">Weights</button>
+                    </div>
+                </div>
+
+                <div class="single-stat-config" x-show="currentStat !== 'weights'">
+                    <h4 x-text="formatStatName(currentStat)"></h4>
+                    <table class="config-table">
+                        <tr>
+                            <th>Value</th>
+                            <th>Points</th>
+                            <th>Actions</th>
+                        </tr>
+                        <template x-for="(points, value) in pointValueLookups[currentStat]" :key="value">
+                            <tr>
+                                <td x-text="value"></td>
+                                <td>
+                                    <input type="number" 
+                                           x-model.number="pointValueLookups[currentStat][value]"
+                                           class="point-input">
+                                </td>
+                                <td class="action-cell">
+                                    <button class="adjust-btn" title="Increase" @click="pointValueLookups[currentStat][value]++">+</button>
+                                    <button class="adjust-btn" title="Decrease" @click="pointValueLookups[currentStat][value]--">-</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </table>
+                </div>
+
+                <!-- Weight Matrix Editor -->
+                <div class="weight-matrix-container" x-show="currentStat === 'weights'">
+                    <h4>Stat Weight Matrix</h4>
+                    <p class="matrix-info">This matrix defines how stats affect each other. Each row represents a source stat, and each column represents a target stat. The value at the intersection represents the influence of the source on the target.</p>
+                    
+                    <div class="weight-matrix-actions">
+                        <button @click="saveWeightMatrix" class="save-weights-btn">Save Weight Matrix</button>
+                        <button @click="resetWeightMatrix" class="reset-weights-btn">Reset to Default</button>
+                        <button @click="includeWeightMatrixInExport = !includeWeightMatrixInExport" 
+                                class="toggle-weights-btn"
+                                x-bind:class="{'active': includeWeightMatrixInExport}">
+                            <span x-text="includeWeightMatrixInExport ? 'Included in Export' : 'Click to include in Export'"></span>
+                        </button>
+                    </div>
+                    
+                    <div class="weight-matrix-scroll">
+                        <table class="weight-matrix-table">
+                            <thead>
+                                <tr>
+                                    <th>Source ↓ / Target →</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of faster Movement">M</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Weapon Skill">WS</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Ballistic Skill">BS</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of higher Strength">S</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of higher Toughness">T</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of more Wounds">W</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of higher Initiative">I</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of more Attacks">A</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Leadership">Ld</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Save">Sv</th>
+                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Invulnerable Save">Inv</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
+                                    <tr>
+                                        <td x-text="getStatShortName(sourceStat)" class="weight-source-stat tooltip" :data-tooltip="'This row controls how much ' + formatStatName(sourceStat) + ' adds to the cost of each stat'"></td>
+                                        <template x-for="(weight, i) in weights" :key="i">
+                                            <td>
+                                                <span class="tooltip" 
+                                                      :data-tooltip="'model\'s ' + formatStatName(sourceStat) + ' ' + (statWeightMatrix[sourceStat][i] > 0 ? 'increases' : statWeightMatrix[sourceStat][i] < 0 ? 'decreases' : 'has no effect on') + ' cost of ' + formatStatName(getStatAtIndex(i))">
+                                                    <input type="number" 
+                                                           x-model.number="statWeightMatrix[sourceStat][i]" 
+                                                           min="-2" 
+                                                           max="2" 
+                                                           step="0.1"
+                                                           class="weight-input"
+                                                           :class="{'active-weight': statWeightMatrix[sourceStat][i] > 0, 'negative-weight': statWeightMatrix[sourceStat][i] < 0}">
+                                                </span>
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="weight-description">
+                        <h5>Current Dependencies:</h5>
+                        <ul class="dependency-list">
+                            <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
+                                <template x-for="(weight, i) in weights" :key="i">
+                                    <li x-show="weight != 0">
+                                        <span x-text="formatStatName(sourceStat)"></span> 
+                                        <span x-text="weight > 0 ? 'increases' : 'decreases'"></span> value of 
+                                        <span x-text="formatStatName(getStatAtIndex(i))"></span> 
+                                        with weight <span x-text="Math.abs(weight)"></span>
+                                    </li>
+                                </template>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            
             
             <div class="import-export-container">
+                <button @click="addModel">Duplicate Model</button>
                 <button class="export-btn" @click="exportModels">Export to CSV</button>
                 <label class="import-btn" for="importInput">Import from CSV</label>
                 <input type="file" id="importInput" accept=".csv" @change="importModels($event)">
@@ -690,6 +1563,23 @@
             <div class="point-formula-container">
                 <div class="point-formula-title">Point Value Tables</div>
                 
+                <div class="stat-selector">
+                    <label for="stat-select">Select Stat:</label>
+                    <select id="stat-select" x-model="currentStat" class="stat-select">
+                        <option value="movement">Movement</option>
+                        <option value="weaponSkill">Weapon Skill</option>
+                        <option value="ballisticSkill">Ballistic Skill</option>
+                        <option value="strength">Strength</option>
+                        <option value="toughness">Toughness</option>
+                        <option value="wounds">Wounds</option>
+                        <option value="attacks">Attacks</option>
+                        <option value="leadership">Leadership</option>
+                        <option value="save">Save</option>
+                        <option value="invulnSave">Invuln Save</option>
+                        <option value="base">Base Cost</option>
+                    </select>
+                </div>
+                
                 <table class="point-formula-table">
                     <thead>
                         <tr>
@@ -698,91 +1588,27 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>Movement</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.movement" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Weapon Skill</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.weaponSkill" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Ballistic Skill</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.ballisticSkill" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Strength</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.strength" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Toughness</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.toughness" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Wounds</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.wounds" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Attacks</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.attacks" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Leadership</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.leadership" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Save</td>
-                            <td>
-                                <template x-for="(points, value) in pointValueLookups.save" :key="value">
-                                    <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                    <br>
-                                </template>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Base Cost</td>
-                            <td>10</td>
-                        </tr>
+                        <!-- Current Stat View -->
+                        <template x-if="currentStat !== 'base'">
+                            <tr>
+                                <td x-text="formatStatName(currentStat)"></td>
+                                <td>
+                                    <template x-for="(points, value) in pointValueLookups[currentStat]" :key="value">
+                                        <div class="point-value-row">
+                                            <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
+                                        </div>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                        
+                        <!-- Base Cost -->
+                        <template x-if="currentStat === 'base'">
+                            <tr>
+                                <td>Base Cost</td>
+                                <td>10</td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
