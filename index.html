@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warhammer Stats Calculator</title>
+    <title>Grim Resolver</title>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body {
@@ -30,7 +30,7 @@
             border: 1px solid #ddd;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #d1d1d1;
         }
         th:first-child, td:first-child {
             width: 60px;
@@ -45,6 +45,10 @@
         input {
             width: 100%;
             box-sizing: border-box;
+        }
+        /* Alternating row colors in the model table */
+        tbody tr:nth-child(odd) {
+            background-color: #dde4dd; /* Light greenish grey */
         }
         /* Hide native spinner buttons only on number inputs within skill-input-wrapper */
         .skill-input-wrapper input[type="number"]::-webkit-inner-spin-button, 
@@ -432,6 +436,7 @@
             cursor: pointer;
             text-align: center;
             margin-top: 2px;
+            display: inline-block;
         }
 
         .breakdown-arrow {
@@ -704,7 +709,22 @@
                 '-': 0
             }
         },
-        
+
+        // Add stat multipliers, defaulting to 1.0
+        statMultipliers: {
+            movement: 1.0,
+            weaponSkill: 1.0,
+            ballisticSkill: 1.0,
+            strength: 1.0,
+            toughness: 1.0,
+            wounds: 1.0,
+            initiative: 1.0,
+            attacks: 1.0,
+            leadership: 1.0,
+            save: 1.0,
+            invulnSave: 1.0
+        },
+
         // Initialize the component
         init() {
             // Load saved point values if they exist
@@ -717,6 +737,19 @@
             const savedWeightMatrix = localStorage.getItem('statWeightMatrix');
             if (savedWeightMatrix) {
                 this.statWeightMatrix = JSON.parse(savedWeightMatrix);
+            }
+
+            // Load saved stat multipliers if they exist
+            const savedStatMultipliers = localStorage.getItem('statMultipliers');
+            if (savedStatMultipliers) {
+                this.statMultipliers = JSON.parse(savedStatMultipliers);
+            } else {
+                // Ensure default multipliers are set if not found in storage
+                this.statMultipliers = {
+                    movement: 1.0, weaponSkill: 1.0, ballisticSkill: 1.0, strength: 1.0,
+                    toughness: 1.0, wounds: 1.0, initiative: 1.0, attacks: 1.0,
+                    leadership: 1.0, save: 1.0, invulnSave: 1.0
+                };
             }
         },
         
@@ -799,7 +832,7 @@
 
         getRelativePoints(model, index) {
             if (index === 0) {
-                return (5).toFixed(1); // First model is always 5, ensure consistent formatting
+                return (5).toFixed(2); // First model is always 5, ensure consistent formatting
             }
             if (this.models.length < 1) {
                 return '-'; // Should not happen, but safeguard
@@ -812,7 +845,7 @@
                 return '-'; // Avoid division by zero or negative base
             }
 
-            return ((currentModelPoints / firstModelPoints) * 5).toFixed(1); // Calculate relative points, rounded
+            return ((currentModelPoints / firstModelPoints) * 5).toFixed(2); // Calculate relative points, rounded
         },
         
         getTotalPoints() {
@@ -1010,7 +1043,8 @@
         exportPointValues() {
             console.log(this.pointValueLookups);
             const dataToExport = {
-                pointValueLookups: this.pointValueLookups
+                pointValueLookups: this.pointValueLookups,
+                statMultipliers: this.statMultipliers // Include multipliers in export
             };
             
             // Include weight matrix if option is enabled
@@ -1042,13 +1076,27 @@
                     if (imported.pointValueLookups) {
                         const requiredStats = [
                             'movement', 'weaponSkill', 'ballisticSkill', 'strength',
-                            'toughness', 'wounds', 'attacks', 'leadership', 'save', 'invulnSave'
+                            'toughness', 'wounds', 'initiative', 'attacks', 'leadership', 'save', 'invulnSave'
                         ];
                         
                         if (requiredStats.every(stat => imported.pointValueLookups[stat])) {
                             this.pointValueLookups = imported.pointValueLookups;
                             localStorage.setItem('pointValueLookups', JSON.stringify(imported.pointValueLookups));
                             
+                            // Import stat multipliers if available
+                            if (imported.statMultipliers) {
+                                this.statMultipliers = imported.statMultipliers;
+                                localStorage.setItem('statMultipliers', JSON.stringify(imported.statMultipliers));
+                            } else {
+                                // Reset to default if not found in imported file
+                                this.statMultipliers = {
+                                    movement: 1.0, weaponSkill: 1.0, ballisticSkill: 1.0, strength: 1.0,
+                                    toughness: 1.0, wounds: 1.0, initiative: 1.0, attacks: 1.0,
+                                    leadership: 1.0, save: 1.0, invulnSave: 1.0
+                                };
+                                localStorage.removeItem('statMultipliers'); // Remove potentially old value
+                            }
+
                             // Import weight matrix if available
                             if (imported.statWeightMatrix) {
                                 if (confirm('The imported file contains a weight matrix. Do you want to import it as well?')) {
@@ -1170,7 +1218,9 @@
             }
             
             // For regular numeric stats
-            return this.pointValueLookups[stat][value];
+            const baseValue = this.pointValueLookups[stat][value];
+            const multiplier = this.statMultipliers[stat] || 1.0; // Get multiplier, default to 1 if undefined
+            return baseValue * multiplier; // Apply multiplier
         },
 
         getStatShortName(stat) {
@@ -1249,11 +1299,14 @@
                 <tbody>
                     <template x-for="(model, index) in models" :key="index">
                         <tr>
-                            <td><span x-text="getRelativePoints(model, index)"></span>
+                            <td><span style="display: inline-block;" x-text="getRelativePoints(model, index)"></span>
                                 <div class="point-breakdown-toggle" @click="model.showPointBreakdown = !model.showPointBreakdown">
                                     <span x-text="model.showPointBreakdown ? '▲' : '▼'" class="breakdown-arrow"></span>
                                 </div>
-                                <div class="point-breakdown" x-show="model.showPointBreakdown" x-data="{ breakdown: null }" x-init="breakdown = getPointBreakdown(model)">
+                                <div class="point-breakdown" 
+                                     x-show="model.showPointBreakdown" 
+                                     x-data="{ breakdown: getPointBreakdown(model) }"
+                                     x-effect="breakdown = getPointBreakdown(model)">
                                     <div class="breakdown-header">Absolute Point Calculation:</div>
                                     <div class="breakdown-base">Base Cost: 10</div>
                                     <template x-if="breakdown">
@@ -1492,17 +1545,18 @@
                             <thead>
                                 <tr>
                                     <th>Source ↓ / Target →</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of faster Movement">M</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Weapon Skill">WS</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Ballistic Skill">BS</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of higher Strength">S</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of higher Toughness">T</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of more Wounds">W</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of higher Initiative">I</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of more Attacks">A</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Leadership">Ld</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Save">Sv</th>
-                                    <th class="tooltip" data-tooltip="This column impacts the cost of better Invulnerable Save">Inv</th>
+                                    <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
+                                        <th class="tooltip" :data-tooltip="'Base cost multiplier for ' + formatStatName(statName)">
+                                            <div x-text="getStatShortName(statName)"></div>
+                                            <input type="number"
+                                                   x-model.number="statMultipliers[statName]"
+                                                   min="0"
+                                                   step="0.1"
+                                                   class="weight-input"
+                                                   style="margin-top: 2px;"
+                                                   @input="$nextTick(() => $forceUpdate())">
+                                        </th>
+                                    </template>
                                 </tr>
                             </thead>
                             <tbody>
