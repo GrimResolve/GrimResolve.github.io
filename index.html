@@ -555,7 +555,7 @@
             {
                 name: 'Space Marine',
                 movement: 6,
-                weaponSkill: 3,
+                weaponSkill: 4,
                 ballisticSkill: '3+',
                 strength: 4,
                 toughness: 4,
@@ -569,7 +569,7 @@
             {
                 name: 'Ork Warboy',
                 movement: 5,
-                weaponSkill: 3,
+                weaponSkill: 4,
                 ballisticSkill: '5+',
                 strength: 3,
                 toughness: 4,
@@ -581,7 +581,7 @@
                 invulnSave: '-'
             }
         ],
-        showPointConfig: false,
+        showPointConfig: true,
         currentStat: 'weights',
         
         // Point value lookup tables for each stat
@@ -601,10 +601,10 @@
                 12: 9
             },
             weaponSkill: {
-                1: 1,
-                2: 2,
-                3: 3,
-                4: 4,
+                1: 0,
+                2: 1,
+                3: 2,
+                4: 3,
                 5: 5,
                 6: 6,
                 7: 7,
@@ -617,20 +617,20 @@
                 '3+': 9,
                 '4+': 6,
                 '5+': 3,
-                '6+': 0,
-                '-': -3
+                '6+': 1,
+                '-': 0
             },
             strength: {
-                1: -5,
-                2: -2,
+                1: -1,
+                2: 0,
                 3: 1,
-                4: 4,
-                5: 7,
-                6: 10,
-                7: 13,
-                8: 16,
-                9: 19,
-                10: 22
+                4: 2,
+                5: 5,
+                6: 8,
+                7: 11,
+                8: 12,
+                9: 13,
+                10: 14
             },
             toughness: {
                 1: -5,
@@ -669,7 +669,7 @@
                 10: 16
             },
             attacks: {
-                1: 0,
+                1: 1,
                 2: 4,
                 3: 8,
                 4: 12,
@@ -682,28 +682,28 @@
             },
             leadership: {
                 1: -5,
-                2: -3,
-                3: -1,
-                4: 1,
-                5: 3,
-                6: 5,
-                7: 7,
-                8: 9,
-                9: 11,
-                10: 13
+                2: -4,
+                3: -3,
+                4: -2,
+                5: -1,
+                6: 0,
+                7: 1,
+                8: 2,
+                9: 3,
+                10: 4
             },
             save: {
-                '2+': 20,
-                '3+': 16,
-                '4+': 12,
-                '5+': 8,
-                '6+': 4,
+                '2+': 16,
+                '3+': 8,
+                '4+': 4,
+                '5+': 2,
+                '6+': 1,
                 '-': 0
             },
             invulnSave: {
-                '2+': 25,
-                '3+': 20,
-                '4+': 15,
+                '2+': 100,
+                '3+': 50,
+                '4+': 20,
                 '5+': 10,
                 '6+': 5,
                 '-': 0
@@ -1128,16 +1128,16 @@
         statWeightMatrix: {
             // Effect of row stat on column stat
             //           M    WS   BS   S    T    W    I    A    Ld   Sv   Inv
-            movement:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
-            weaponSkill:[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
+            movement:   [0,  .1,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
+            weaponSkill:[0,   0, -.2,   0,   0,   0,  .2,  .5,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
             ballisticSkill:[0,0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-            strength:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Strength is a terminal node
-            toughness:  [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
+            strength:   [0,   0,   0,   0,   0,   0,   0,  .5,   0,   0,   0],   // Strength is a terminal node
+            toughness:  [0,   0,   0,   0,   0,  .1,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
             wounds:     [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Wounds is a terminal node
-            initiative: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Initiative affects Attacks
+            initiative: [0,   0,   0,   0,   0,   0,   0,  .2,   0,   0,   0],   // Initiative affects Attacks
             attacks:    [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Attacks affects Strength
             leadership: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Leadership is a terminal node
-            save:       [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Save affects Wounds
+            save:       [0,   0,   0,   0,   0,  .5,   0,   0,   0,   0,   0],   // Save affects Wounds
             invulnSave: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0]    // Invuln Save affects Wounds
         },
 
@@ -1448,8 +1448,8 @@
                 <div class="point-config-header">
                     <h3>Point Value Configuration</h3>
                     <div class="point-config-actions">
-                        <button @click="exportPointValues" class="export-btn">Export Values</button>
-                        <label class="import-btn" for="importPointValues">Import Values</label>
+                        <button @click="exportPointValues" class="export-btn">Export Configuration</button>
+                        <label class="import-btn" for="importPointValues">Import Configuration</label>
                         <input type="file" id="importPointValues" @change="importPointValues($event)" accept=".json">
                     </div>
                 </div>
