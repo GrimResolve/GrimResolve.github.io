@@ -519,6 +519,7 @@
             border-radius: 3px;
         }
 
+        /* Update the breakdown item styles for better alignment */
         .breakdown-item {
             display: flex;
             justify-content: space-between;
@@ -527,10 +528,30 @@
             border-bottom: 1px dotted #eee;
         }
 
+        .breakdown-item span:first-child {
+            flex: 1;
+            text-align: left;
+        }
+
+        .breakdown-item span:nth-child(2) {
+            flex: 0 0 30px;
+            text-align: right;
+        }
+
         .adjusted-value {
             color: #4CAF50;
             margin-left: 5px;
             font-weight: bold;
+            flex: 0 0 50px;
+            text-align: right;
+        }
+
+        .percentage-value {
+            color: #888;
+            font-size: 0.9em;
+            margin-left: 5px;
+            flex: 0 0 45px;
+            text-align: right;
         }
 
         .breakdown-total {
@@ -1692,6 +1713,9 @@
                                     <span class="adjusted-value" 
                                         x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
                                 </template>
+                                <!-- Add percentage contribution calculation -->
+                                <span class="percentage-value" 
+                                      x-text="' (' + Math.round((breakdown.adjustedValues[stat] / (breakdown.total - 10)) * 100) + '%)'"></span>
                             </div>
                         </template>
                         <div class="breakdown-total">
@@ -2122,7 +2146,7 @@
                                 <table class="weight-matrix-table">
                                     <thead>
                                         <tr>
-                                            <th>Source ↓ / Target →</th>
+                                            <th>Target→ Source↓</th>
                                             <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
                                                 <th class="tooltip" :data-tooltip="'Base cost multiplier for ' + formatStatName(statName)">
                                                     <div x-text="getStatShortName(statName)"></div>
