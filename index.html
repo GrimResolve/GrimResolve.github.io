@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grim Resolver</title>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Header styles */
         .header {
@@ -539,6 +540,49 @@
             font-weight: bold;
             text-align: right;
             color: #333;
+        }
+
+        /* Capability Chart Styles */
+        .capability-chart {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 13px;
+        }
+
+        .capability-chart-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+            color: #45a049;
+            font-size: 14px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 10px;
+        }
+
+        /* Pie Chart Styles */
+        .capability-pie-chart {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 13px;
+        }
+
+        .pie-chart-container {
+            position: relative;
+            height: 220px;
+            margin-top: 10px;
         }
 
         .matrix-info {
@@ -1586,34 +1630,242 @@
             }
         },
 
-        includeWeightMatrixInExport: false
+        includeWeightMatrixInExport: false,
+
+        // Get capabilities for the selected model
+        getCapabilities(model) {
+            // First get the point breakdown with all adjusted values
+            const breakdown = this.getPointBreakdown(model);
+            const adjustedValues = breakdown.adjustedValues;
+            
+            // Calculate each capability
+            const shooting = Math.max(0, adjustedValues.ballisticSkill);
+            
+            const combat = Math.max(0, 
+                adjustedValues.weaponSkill + 
+                adjustedValues.strength + 
+                adjustedValues.attacks +
+                adjustedValues.initiative
+            );
+            
+            const defense = Math.max(0, 
+                adjustedValues.toughness + 
+                adjustedValues.save + 
+                adjustedValues.invulnSave +
+                adjustedValues.wounds
+            );
+            
+            const movement = Math.max(0, adjustedValues.movement);
+            
+            const other = Math.max(0, adjustedValues.leadership);
+            
+            return {
+                shooting,
+                combat,
+                defense,
+                movement,
+                other
+            };
+        }
     }">
         <div class="left-pane">
             <h2>Point Breakdown</h2>
-            <div class="point-breakdown" 
-                 x-show="selectedModel !== null" 
-                 x-data="{ breakdown: selectedModel ? getPointBreakdown(selectedModel) : null }"
-                 x-effect="breakdown = selectedModel ? getPointBreakdown(selectedModel) : null">
-                <div class="breakdown-header">Absolute Point Calculation:</div>
-                <div class="breakdown-base">Base Cost: 10</div>
-                <template x-if="breakdown">
-                    <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
-                        <div class="breakdown-item">
-                            <span x-text="formatStatName(stat) + ':'"></span>
-                            <span x-text="baseValue.toFixed(1)"></span>
-                            <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
-                                <span class="adjusted-value" 
-                                      x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
-                            </template>
+            <div x-data="{ 
+                capabilities: selectedModel ? getCapabilities(selectedModel) : null,
+                breakdown: selectedModel ? getPointBreakdown(selectedModel) : null,
+                chart: null,
+                pieChart: null
+            }"
+            x-effect="capabilities = selectedModel ? getCapabilities(selectedModel) : null; 
+                      breakdown = selectedModel ? getPointBreakdown(selectedModel) : null;">
+                
+                <!-- Point Breakdown Section -->
+                <div class="point-breakdown" x-show="selectedModel !== null">
+                    <div class="breakdown-header">Absolute Point Calculation:</div>
+                    <div class="breakdown-base">Base Cost: 10</div>
+                    <template x-if="breakdown">
+                        <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
+                            <div class="breakdown-item">
+                                <span x-text="formatStatName(stat) + ':'"></span>
+                                <span x-text="baseValue.toFixed(1)"></span>
+                                <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
+                                    <span class="adjusted-value" 
+                                        x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
+                                </template>
+                            </div>
+                        </template>
+                        <div class="breakdown-total">
+                            Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
                         </div>
                     </template>
-                    <div class="breakdown-total">
-                        Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
-                    </div>
-                </template>
-                <template x-if="!breakdown">
-                    <div>Select a model to see breakdown</div>
-                </template>
+                    <template x-if="!breakdown">
+                        <div>Select a model to see breakdown</div>
+                    </template>
+                </div>
+
+                <!-- Capability Bar Chart -->
+                <div class="capability-chart" x-show="selectedModel !== null"
+                    x-init="$watch('capabilities', (value) => { 
+                        if (value) {
+                            if (chart) chart.destroy();
+                            const ctx = $refs.capabilityCanvas.getContext('2d');
+                            
+                            // Calculate the maximum value for the y-axis
+                            const dataValues = [
+                                value.shooting,
+                                value.combat,
+                                value.defense,
+                                value.movement,
+                                value.other
+                            ];
+                            const maxValue = Math.max(...dataValues);
+                            const yAxisMax = Math.max(20, Math.ceil(maxValue * 1.1)); // At least 20, with 10% headroom
+                            
+                            chart = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: ['Shooting', 'Combat', 'Defense', 'Movement', 'Other'],
+                                    datasets: [{
+                                        label: 'Capability Points',
+                                        data: dataValues,
+                                        backgroundColor: [
+                                            'rgba(255, 120, 0, 0.8)',   // Fiery orange (Shooting)
+                                            'rgba(180, 20, 20, 0.8)',    // Blood red (Combat)
+                                            'rgba(70, 130, 180, 0.8)',   // Steel blue (Defense)
+                                            'rgba(50, 200, 100, 0.8)',    // Swift green (Movement)
+                                            'rgba(199, 21, 133, 0.8)'    // Bright pinkish purple (Other)
+                                        ],
+                                        borderColor: [
+                                            'rgba(255, 120, 0, 1)',     // Fiery orange (Shooting)
+                                            'rgba(180, 20, 20, 1)',      // Blood red (Combat)
+                                            'rgba(70, 130, 180, 1)',     // Steel blue (Defense)
+                                            'rgba(50, 200, 100, 1)',      // Swift green (Movement)
+                                            'rgba(199, 21, 133, 1)'      // Bright pinkish purple (Other)
+                                        ],
+                                        borderWidth: 0
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: {
+                                        duration: 0 // Set animation duration to 0 to make it instant
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            max: yAxisMax,
+                                            grid: {
+                                                color: 'rgba(0, 0, 0, 0.1)'
+                                            },
+                                            ticks: {
+                                                stepSize: 5
+                                            }
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            display: false
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    return context.parsed.y.toFixed(1) + ' points';
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });">
+                    <div class="capability-chart-header">Capability Costs:</div>
+                    <template x-if="capabilities">
+                        <div class="chart-container">
+                            <canvas x-ref="capabilityCanvas"></canvas>
+                        </div>
+                    </template>
+                    <template x-if="!capabilities">
+                        <div>Select a model to see capabilities</div>
+                    </template>
+                </div>
+
+                <!-- Capability Pie Chart -->
+                <div class="capability-pie-chart" x-show="selectedModel !== null"
+                    x-init="$watch('capabilities', (value) => { 
+                        if (value) {
+                            if (pieChart) pieChart.destroy();
+                            const pieCtx = $refs.pieCanvas.getContext('2d');
+                            
+                            pieChart = new Chart(pieCtx, {
+                                type: 'pie',
+                                data: {
+                                    labels: ['Shooting', 'Combat', 'Defense', 'Movement', 'Other'],
+                                    datasets: [{
+                                        data: [
+                                            value.shooting,
+                                            value.combat,
+                                            value.defense,
+                                            value.movement,
+                                            value.other
+                                        ],
+                                        backgroundColor: [
+                                            'rgba(255, 120, 0, 0.8)',   // Fiery orange (Shooting)
+                                            'rgba(180, 20, 20, 0.8)',    // Blood red (Combat)
+                                            'rgba(70, 130, 180, 0.8)',   // Steel blue (Defense)
+                                            'rgba(50, 200, 100, 0.8)',    // Swift green (Movement)
+                                            'rgba(199, 21, 133, 0.8)'    // Bright pinkish purple (Other)
+                                        ],
+                                        borderColor: [
+                                            'rgba(255, 120, 0, 1)',     // Fiery orange (Shooting)
+                                            'rgba(180, 20, 20, 1)',      // Blood red (Combat)
+                                            'rgba(70, 130, 180, 1)',     // Steel blue (Defense)
+                                            'rgba(50, 200, 100, 1)',      // Swift green (Movement)
+                                            'rgba(199, 21, 133, 1)'      // Bright pinkish purple (Other)
+                                        ],
+                                        borderWidth: 0
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: {
+                                        duration: 0 // Make animation instant
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            position: 'right',
+                                            labels: {
+                                                font: {
+                                                    size: 11
+                                                }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const value = context.parsed;
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                    const percentage = Math.round((value * 100) / total);
+                                                    return `${value.toFixed(1)} points (${percentage}%)`;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });">
+                    <div class="capability-chart-header">Cost Distribution:</div>
+                    <template x-if="capabilities">
+                        <div class="pie-chart-container">
+                            <canvas x-ref="pieCanvas"></canvas>
+                        </div>
+                    </template>
+                    <template x-if="!capabilities">
+                        <div>Select a model to see capability distribution</div>
+                    </template>
+                </div>
             </div>
         </div>
 
