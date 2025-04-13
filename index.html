@@ -1163,8 +1163,8 @@
                     }
                 }
                 
-                // Apply adjustment with diminishing returns
-                adjustedValues[targetStat] = baseValues[targetStat] * (1 + adjustment);
+                // Apply adjustment by direct addition instead of as a multiplier
+                adjustedValues[targetStat] = baseValues[targetStat] + adjustment;
             }
             
             return adjustedValues;
@@ -1172,38 +1172,6 @@
 
         calculateInfluence(rawValue, weight, sourceStat) {
             return weight * rawValue;
-
-            // For basic stats like movement, strength, etc.
-            if (['movement', 'weaponSkill', 'strength', 'toughness', 'wounds', 'attacks', 'leadership'].includes(sourceStat)) {
-                // Convert value to percentage of max value (1-10 or 1-12 for movement)
-                const maxValue = sourceStat === 'movement' ? 12 : 10;
-                const percentage = rawValue / maxValue;
-                
-                // Apply weight with diminishing returns
-                return weight * rawValue;
-            } 
-            // For stats with plus signs like BS, Save, Invuln Save
-            else if (['ballisticSkill', 'save', 'invulnSave'].includes(sourceStat)) {
-                // Convert 2+, 3+, etc. to numerical value (inverted so 2+ is better than 6+)
-                let value;
-                if (rawValue === '-') {
-                    value = 0; // No influence for '-' values
-                } else {
-                    // Extract number from '2+', '3+', etc.
-                    const parsedValue = parseInt(rawValue.replace('+', ''));
-                    if (!isNaN(parsedValue)) {
-                        // Invert so 2+ is better (value 0.8) than 6+ (value 0.2)
-                        value = (7 - parsedValue) / 5;
-                    } else {
-                        value = 0;
-                    }
-                }
-                
-                // Apply weight
-                return weight * rawValue;
-            }
-            
-            return 0; // Default fallback
         },
 
         getBasePoints(stat, value) {
