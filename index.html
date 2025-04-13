@@ -227,12 +227,12 @@
 
         /* Point value configuration styles */
         .config-btn {
-            background-color: #b73a3a;
+            background-color: #3a9989;
             margin-bottom: 20px;
         }
 
         .config-btn:hover {
-            background-color: #b13535;
+            background-color: #88c0b2;
         }
 
         .point-config-tables {
@@ -1207,18 +1207,22 @@
         },
 
         getBasePoints(stat, value) {
+            let baseValue;
             // Handle special cases for stats with plus signs
             if (['ballisticSkill', 'save', 'invulnSave'].includes(stat)) {
                 if (!value || value === '-') {
-                    return this.pointValueLookups[stat]['-'];
+                    baseValue = this.pointValueLookups[stat]['-'];
+                } else {
+                    // Parse the value, removing the '+' if present
+                    const parsedValue = value.replace('+', '');
+                    baseValue = this.pointValueLookups[stat][parsedValue + '+'];
                 }
-                // Parse the value, removing the '+' if present
-                const parsedValue = value.replace('+', '');
-                return this.pointValueLookups[stat][parsedValue + '+'];
+            } else {
+                // For regular numeric stats
+                baseValue = this.pointValueLookups[stat][value];
             }
             
-            // For regular numeric stats
-            const baseValue = this.pointValueLookups[stat][value];
+            // Apply multiplier to all stats, including skill-based ones
             const multiplier = this.statMultipliers[stat] || 1.0; // Get multiplier, default to 1 if undefined
             return baseValue * multiplier; // Apply multiplier
         },
