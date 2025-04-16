@@ -1595,6 +1595,7 @@ function appData() {
             let totalExpectedWounds = 0;
             let attackerDetails = [];
             let totalAttackerPoints = 0;
+            let totalDefenderPoints = this.calculatePoints(defender);
 
             const scenarioRange = parseInt(scenario.range, 10) || 12; // Get scenario range once
 
@@ -1693,12 +1694,12 @@ function appData() {
             // Calculate and add efficiency metric
             let pointsPerWound = 0;
             if (totalExpectedWounds > 0) {
-                pointsPerWound = totalAttackerPoints / totalExpectedWounds;
+                pointsPerWound = totalAttackerPoints / totalExpectedWounds / totalDefenderPoints;
             } else if (totalAttackerPoints > 0) {
                 pointsPerWound = Infinity; // Attackers spent points but did no wounds
             }
             
-            resultString += `\n\nDefender Efficiency (Attacker Pts / Wound): ${pointsPerWound === Infinity ? 'Infinite (0 wounds)' : pointsPerWound.toFixed(2)} (Higher is better)`;
+            resultString += `\n\nDefender Efficiency (Attacker Pts / Wound / Defender Pts): ${pointsPerWound === Infinity ? 'Infinite (0 wounds)' : pointsPerWound.toFixed(2)} (Higher is better)`;
 
             return resultString;
         },
@@ -1765,83 +1766,6 @@ function appData() {
             return null; // Return null if identifier is neither or not found
         },
 
-        // ++ Add function to map item weights (-2 to 2) to color scale (0 to 2) ++
-        mapWeightToColorValue(weight) {
-            // Ensure weight is treated as a number
-            const numWeight = parseFloat(weight) || 0;
-            // Clamp the weight between -2 and 2
-            const clampedWeight = Math.max(-2, Math.min(2, numWeight));
-            // Map [-2, 2] to [0, 2]
-            // Shift range from [-2, 2] to [0, 4] by adding 2
-            // Scale range from [0, 4] to [0, 2] by dividing by 2
-            return (clampedWeight + 2) / 2;
-        },
-        // ++ End function ++
-
-        // ++ Add Armory Stat Spinner Functions ++
-        incrementArmoryStat(item, statName) {
-            const maxValue = 10; // Assuming a general max value for simplicity
-            if (item[statName] < maxValue) {
-                item[statName]++;
-            }
-            this.saveArmoryItems(); // Save after change
-        },
-        decrementArmoryStat(item, statName) {
-            const minValue = 1; // Assuming a general min value
-            if (item[statName] > minValue) {
-                item[statName]--;
-            }
-            this.saveArmoryItems(); // Save after change
-        },
-        incrementArmoryAP(item) {
-            // AP gets numerically larger but is worse (e.g., AP 5 is worse than AP 2)
-            let currentAP = parseInt(item.ap, 10);
-            if (isNaN(currentAP) || currentAP === 0) { // Treat '-' or 0 as starting point before 6
-                item.ap = 6;
-            } else if (currentAP < 6) {
-                item.ap = currentAP + 1;
-            }
-            // No change if already 6 (or higher, though UI should prevent >6)
-            this.saveArmoryItems(); // Save after change
-        },
-        decrementArmoryAP(item) {
-            // AP gets numerically smaller and better
-            let currentAP = parseInt(item.ap, 10);
-             if (!isNaN(currentAP)) {
-                if (currentAP > 1 && currentAP <= 6) {
-                   item.ap = currentAP - 1;
-                } else if (currentAP === 1) {
-                    item.ap = 1; // Cannot go below 1
-                } else {
-                   // If it's 0 or invalid, set to 1 as the 'best' value
-                   item.ap = 1;
-                }
-             } else {
-                // Handle cases where AP might be '-' or invalid
-                item.ap = 6; // Start from the 'worst' valid number when decreasing from '-'?
-             }
-            this.saveArmoryItems(); // Save after change
-        },
-        incrementArmoryWeight(item, index) {
-            const maxValue = 2.0;
-            const step = 0.1;
-            let currentValue = parseFloat(item.statWeights[index]) || 0;
-            if (currentValue < maxValue) {
-                item.statWeights[index] = parseFloat((currentValue + step).toFixed(1));
-            }
-            this.saveArmoryItems(); // Save after change
-        },
-        decrementArmoryWeight(item, index) {
-            const minValue = -2.0;
-            const step = 0.1;
-            let currentValue = parseFloat(item.statWeights[index]) || 0;
-            if (currentValue > minValue) {
-                item.statWeights[index] = parseFloat((currentValue - step).toFixed(1));
-            }
-            this.saveArmoryItems(); // Save after change
-        },
-        // ++ End Armory Stat Spinner Functions ++
-
         // --- Armory Item Management ---
 
         // --- Add Direct Equipment Assignment Functions ---
@@ -1897,10 +1821,109 @@ function appData() {
                 }
                 return true; // Passes both checks
             });
-        }
+        },
         // --- End Direct Equipment Assignment Functions ---
+
+        // ++ Add function to calculate cost of a single equipment item for a model ++
+        getEquipmentCost(model, itemId) {
+            if (!model || !itemId) return 0;
+            const item = this.getArmoryItemById(itemId);
+            // Return base cost if item not found, or has no valid weights
+            if (!item || !item.statWeights || !Array.isArray(item.statWeights)) {
+                return item?.baseCost || 0;
+            }
+
+            // Calculate the model's base stat point values (including multipliers)
+            const baseValues = {
+                movement: this.getBasePoints('movement', model.movement),
+                weaponSkill: this.getBasePoints('weaponSkill', model.weaponSkill),
+                ballisticSkill: this.getBasePoints('ballisticSkill', model.ballisticSkill),
+                strength: this.getBasePoints('strength', model.strength),
+                toughness: this.getBasePoints('toughness', model.toughness),
+                wounds: this.getBasePoints('wounds', model.wounds),
+                initiative: this.getBasePoints('initiative', model.initiative),
+                attacks: this.getBasePoints('attacks', model.attacks),
+                leadership: this.getBasePoints('leadership', model.leadership),
+                save: this.getBasePoints('save', model.save),
+                invulnSave: this.getBasePoints('invulnSave', model.invulnSave)
+            };
+
+            let currentItemCost = item.baseCost || 0;
+            const statOrder = this.getStatOrder();
+
+            statOrder.forEach((stat, index) => {
+                // Ensure the index is within the bounds of the item's statWeights array
+                if (index < item.statWeights.length) {
+                    const modelStatBaseCost = baseValues[stat]; // Use model's base value for the stat
+                    const itemWeight = item.statWeights[index];
+                    currentItemCost += modelStatBaseCost * itemWeight;
+                }
+            });
+
+            return currentItemCost;
+        },
+        // ++ End function ++
 
         // --- End Helper Functions ---
 
-    }; // ADDED COMMA HERE
+        // ++ Add function to map item weights (-2 to 2) to color scale (0 to 2) ++
+        mapWeightToColorValue(weight) {
+            // Ensure weight is treated as a number
+            const numWeight = parseFloat(weight) || 0;
+            // Clamp the weight between -2 and 2
+            const clampedWeight = Math.max(-2, Math.min(2, numWeight));
+            // Map [-2, 2] to [0, 2]
+            return (clampedWeight + 2) / 2;
+        },
+        // ++ End function ++
+
+        // ++ Add Armory Stat Spinner Functions ++
+        incrementArmoryStat(item, statName) {
+            const maxValue = 10; // Assuming a general max value for simplicity
+            if (item[statName] < maxValue) {
+                item[statName]++;
+            }
+            this.saveArmoryItems(); // Save after change
+        },
+        decrementArmoryStat(item, statName) {
+            const minValue = 1; // Assuming a general min value
+            if (item[statName] > minValue) {
+                item[statName]--;
+            }
+            this.saveArmoryItems(); // Save after change
+        },
+        incrementArmoryAP(item) {
+            let currentAP = parseInt(item.ap, 10);
+            if (isNaN(currentAP) || currentAP === 0) { item.ap = 6; }
+            else if (currentAP < 6) { item.ap = currentAP + 1; }
+            this.saveArmoryItems();
+        },
+        decrementArmoryAP(item) {
+            let currentAP = parseInt(item.ap, 10);
+            if (!isNaN(currentAP)) {
+                if (currentAP > 1 && currentAP <= 6) { item.ap = currentAP - 1; }
+                else if (currentAP === 1) { item.ap = 1; }
+                else { item.ap = 1; }
+            } else { item.ap = 6; }
+            this.saveArmoryItems();
+        },
+        incrementArmoryWeight(item, index) {
+            const maxValue = 2.0; const step = 0.1;
+            let currentValue = parseFloat(item.statWeights[index]) || 0;
+            if (currentValue < maxValue) {
+                item.statWeights[index] = parseFloat((currentValue + step).toFixed(1));
+            }
+            this.saveArmoryItems();
+        },
+        decrementArmoryWeight(item, index) {
+            const minValue = -2.0; const step = 0.1;
+            let currentValue = parseFloat(item.statWeights[index]) || 0;
+            if (currentValue > minValue) {
+                item.statWeights[index] = parseFloat((currentValue - step).toFixed(1));
+            }
+            this.saveArmoryItems();
+        },
+        // ++ End Armory Stat Spinner Functions ++
+
+    }; // END OF appData return object
 } 

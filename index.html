@@ -590,7 +590,11 @@
                             <ul style="list-style: none; padding-left: 0;">
                                 <template x-for="itemId in selectedModel.assignedArmoryItemIds" :key="itemId">
                                     <li style="margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">
-                                        <span x-text="getArmoryItemById(itemId)?.name || 'Unknown Item (' + itemId + ')'" style="font-size: 0.9em;"></span>
+                                        <span style="font-size: 0.9em;">
+                                            <span x-text="getArmoryItemById(itemId)?.name || 'Unknown Item (' + itemId + ')'"></span>
+                                            <!-- Display calculated cost -->
+                                            <span x-text="' (' + getEquipmentCost(selectedModel, itemId).toFixed(1) + ' pts)'" style="font-style: italic; color: #555;"></span>
+                                        </span>
                                         <button @click="removeEquipmentFromModel(itemId)" class="remove-equip-btn" title="Remove Item">X</button>
                                     </li>
                                 </template>
