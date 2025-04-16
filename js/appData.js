@@ -348,7 +348,8 @@ function appData() {
                     id: 'scenario_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
                     name: 'Melee vs Guardsman',
                     type: 'meleeAttack',
-                    targetModelIds: [1] // Target the Imperial Guardsman (ID 1)
+                    targetModelIds: [1], // Target the Imperial Guardsman (ID 1)
+                    attackingModelIds: [] // Initialize attacker list
                 };
                 this.scenarios.push(defaultMeleeScenario);
 
@@ -357,7 +358,8 @@ function appData() {
                     id: 'scenario_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8), // Slightly different random part
                     name: 'Ranged vs Guardsman',
                     type: 'rangedAttack',
-                    targetModelIds: [1] // Target the Imperial Guardsman (ID 1)
+                    targetModelIds: [1], // Target the Imperial Guardsman (ID 1)
+                    attackingModelIds: [] // Initialize attacker list
                 };
                 this.scenarios.push(defaultRangedScenario);
 
@@ -1133,6 +1135,7 @@ function appData() {
                 name: 'New Scenario',
                 type: 'meleeAttack', // Default type
                 targetModelIds: [], // Default empty targets
+                attackingModelIds: [], // Initialize attacker list
                 // Add other default fields as needed for other types later
                 // weaponProfile: { name: '', shots: '', s: '', ap: '', d: '' }
             };
@@ -1184,6 +1187,13 @@ function appData() {
                     if (Array.isArray(importedData)) {
                         // Optional: More validation could be added here to check scenario structure
                         if (confirm(`Replace current scenarios (${this.scenarios.length}) with ${importedData.length} imported scenarios?`)) {
+                            // Ensure imported scenarios have the new field
+                            importedData.forEach(scenario => {
+                                if (scenario.attackingModelIds === undefined) {
+                                    scenario.attackingModelIds = [];
+                                }
+                                // Add similar checks for other fields if structure evolves
+                            });
                             this.scenarios = importedData;
                             this.selectedScenarioId = null; // Deselect any currently selected scenario
                             this.saveScenarios(); // Save the newly imported scenarios
@@ -1319,10 +1329,8 @@ function appData() {
                     return this.calculateMeleeAttackOutcome(scenario, perspectiveModel);
                 case 'rangedAttack':
                     return this.calculateRangedAttackOutcome(scenario, perspectiveModel);
-                // case 'meleeDefense':
-                //     return this.calculateMeleeDefenseOutcome(scenario, perspectiveModel);
-                // case 'rangedDefense':
-                //     return this.calculateRangedDefenseOutcome(scenario, perspectiveModel);
+                case 'rangedDefense':
+                    return this.calculateRangedDefenseOutcome(scenario, perspectiveModel);
                 default:
                     return `Scenario type '${scenario.type}' not implemented yet.`;
             }
@@ -1389,7 +1397,7 @@ function appData() {
 
                 // Calculate efficiency
                 const attackerPoints = this.calculatePoints(attacker); // Use the absolute points calculation
-                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0;
+                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0; 
                 const saveChance = (1.0 - pFailSave);
 
                 // Format result for this target
@@ -1494,7 +1502,83 @@ function appData() {
             }
             return results.join('\n\n');
         },
-        // Add calculateRangedAttackOutcome, etc. here later
+
+        calculateRangedDefenseOutcome(scenario, defender) {
+            if (!defender) return "Defender not found.";
+            if (!scenario.attackingModelIds || scenario.attackingModelIds.length === 0) {
+                return "No attackers selected for this ranged defense scenario.";
+            }
+
+            let totalExpectedWounds = 0;
+            let attackerDetails = [];
+
+            for (const attackerId of scenario.attackingModelIds) {
+                const attacker = this.getModelById(attackerId);
+                if (!attacker) {
+                    attackerDetails.push(` - Attacker ID ${attackerId}: Not found`);
+                    continue;
+                }
+
+                // Find the first equipped ranged weapon for this attacker
+                let weaponUsed = null;
+                const assignedIds = attacker.assignedArmoryItemIds || [];
+                for (const itemId of assignedIds) {
+                    const item = this.getArmoryItemById(itemId);
+                    if (item && item.type === 'rangedWeapon') {
+                        weaponUsed = item;
+                        break;
+                    }
+                }
+
+                if (!weaponUsed) {
+                    attackerDetails.push(` - ${attacker.name || '(Unnamed)'}: No ranged weapon equipped.`);
+                    continue;
+                }
+                
+                // Essential stats check
+                 if (typeof attacker.ballisticSkill === 'undefined' || 
+                    typeof weaponUsed.strength === 'undefined' || typeof weaponUsed.ap === 'undefined' || typeof weaponUsed.attacks === 'undefined' ||
+                    typeof defender.toughness === 'undefined' || typeof defender.save === 'undefined' || typeof defender.invulnSave === 'undefined') {
+                    attackerDetails.push(` - ${attacker.name || '(Unnamed)'}: Missing required stats.`);
+                    continue;
+                }
+
+                // Calculate outcome vs this specific attacker
+                const effectiveS = weaponUsed.strength;
+                const effectiveA = weaponUsed.attacks; // TODO: Factor in weapon type later
+                const effectiveAP = parseInt(weaponUsed.ap, 10) || 0;
+                const attackerBS = this.parseSaveValue(attacker.ballisticSkill);
+
+                const pHit = this.getD6Probability(attackerBS);
+                const pWound = this.getWoundProbability(effectiveS, defender.toughness);
+                const pFailSave = this.getFailSaveProbability(defender.save, defender.invulnSave, effectiveAP);
+                
+                const expectedWoundsFromAttacker = effectiveA * pHit * pWound * pFailSave;
+                totalExpectedWounds += expectedWoundsFromAttacker;
+                
+                // Store details for potential breakdown
+                const weaponAPDisplay = (effectiveAP === 0) ? '-' : effectiveAP;
+                attackerDetails.push(
+                    `  - ${attacker.name || '(Unnamed)'} (BS ${attacker.ballisticSkill})
+` +
+                    `    Weapon: ${weaponUsed.name} (S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})
+` +
+                    `    Expected Wounds: ${expectedWoundsFromAttacker.toFixed(2)}`
+                );
+            }
+
+            // Format final result
+            let resultString = `Defender: ${defender.name || '(Unnamed)'} (T${defender.toughness}, ${defender.save}/${defender.invulnSave})
+`;
+            resultString += `Total Expected Wounds Sustained: ${totalExpectedWounds.toFixed(2)}
+
+`;
+            resultString += `Attacker Breakdown:
+`;
+            resultString += attackerDetails.join('\n');
+
+            return resultString;
+        },
 
         // --- End Scenario Calculation Logic ---
 

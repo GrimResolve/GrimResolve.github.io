@@ -613,7 +613,7 @@
                     <!-- Loop through scenarios and display relevant results -->
                     <template x-for="scenario in scenarios" :key="scenario.id">
                         <!-- Check if the scenario involves the selectedModel as the attacker -->
-                        <div x-show="scenario.type === 'meleeAttack' || scenario.type === 'rangedAttack'" class="scenario-result-item">
+                        <div class="scenario-result-item">
                             <h4>
                                 <span x-text="scenario.name || 'Unnamed Scenario'"></span>
                                 (<span x-text="scenario.type" style="font-style: italic; font-size: 0.9em;"></span>)
@@ -669,7 +669,10 @@
                     <p>Select a scenario from the list to edit, or add a new one.</p>
                 </div>
                 <template x-if="selectedScenario">
-                    <div> <!-- Wrap content in a div or use template tag -->
+                    <div x-init="$watch('selectedScenario', (value) => { 
+                            console.log('Scenario changed, saving...'); 
+                            saveScenarios(); 
+                         }, { deep: true })">
                         <!-- Scenario Name -->
                         <div class="form-group">
                             <label for="scenarioName">Scenario Name:</label>
@@ -685,8 +688,8 @@
                                 <option value="rangedAttack">Ranged Attack</option>
                                 <!--
                                 <option value="meleeDefense">Melee Defense</option>
-                                <option value="rangedDefense">Ranged Defense</option>
                                 -->
+                                <option value="rangedDefense">Ranged Defense</option>
                             </select>
                         </div>
 
@@ -717,6 +720,22 @@
                         <div x-show="selectedScenario.type === 'meleeDefense' || selectedScenario.type === 'rangedDefense'" class="scenario-type-fields">
                             <h4>Defense Options</h4>
                             <p>(Attacking model/weapon selection will go here)</p>
+                        </div>
+                        <!-- Ranged Defense Specific Fields -->
+                        <div x-show="selectedScenario.type === 'rangedDefense'" class="scenario-type-fields">
+                            <h4>Ranged Defense Options</h4>
+                            <div class="form-group">
+                                <label for="attackingModels">Attacking Models:</label>
+                                <!-- Ensure scenario object has attackingModelIds -->
+                                <select id="attackingModels" x-model="selectedScenario.attackingModelIds" multiple size="5" style="width: 100%;">
+                                    <template x-for="model in models" :key="model.id">
+                                        <!-- Option to exclude the defender later? -->
+                                        <option :value="model.id" x-text="model.name || 'Unnamed Model'"></option>
+                                    </template>
+                                </select>
+                                <small>Hold Ctrl/Cmd to select multiple attackers. Attackers will use their first equipped ranged weapon.</small>
+                            </div>
+                            <!-- Add weapon selection later if needed -->
                         </div>
 
                         <!-- Add a Save button later if needed, or rely on x-model auto-updating -->
