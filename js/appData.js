@@ -1511,6 +1511,7 @@ function appData() {
 
             let totalExpectedWounds = 0;
             let attackerDetails = [];
+            let totalAttackerPoints = 0; // Initialize total attacker points
 
             for (const attackerId of scenario.attackingModelIds) {
                 const attacker = this.getModelById(attackerId);
@@ -1542,6 +1543,9 @@ function appData() {
                     attackerDetails.push(` - ${attacker.name || '(Unnamed)'}: Missing required stats.`);
                     continue;
                 }
+
+                // Add attacker's points to the total
+                totalAttackerPoints += this.calculatePoints(attacker);
 
                 // Calculate outcome vs this specific attacker
                 const effectiveS = weaponUsed.strength;
@@ -1576,6 +1580,17 @@ function appData() {
             resultString += `Attacker Breakdown:
 `;
             resultString += attackerDetails.join('\n');
+
+            // Calculate and add efficiency metric
+            let pointsPerWound = 0;
+            if (totalExpectedWounds > 0) {
+                pointsPerWound = totalAttackerPoints / totalExpectedWounds;
+            } else if (totalAttackerPoints > 0) {
+                pointsPerWound = Infinity; // Attackers spent points but did no wounds
+            }
+            // Handle case where no attackers or no wounds possible (pointsPerWound remains 0)
+            
+            resultString += `\n\nDefender Efficiency (Attacker Pts / Wound): ${pointsPerWound === Infinity ? 'Infinite (0 wounds)' : pointsPerWound.toFixed(2)} (Higher is better)`;
 
             return resultString;
         },

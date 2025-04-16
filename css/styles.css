@@ -702,12 +702,12 @@ button:hover {
 
 .right-pane {
     right: 20px; /* Match body padding */
-    width: 280px; /* Original width */
+    width: 350px; /* Original width */
 }
 
 .center-pane {
     flex: 1; /* Grow to fill available space */
-    margin: 0 220px 0 300px; /* Adjust left margin to account for wider left pane */
+    margin: 0 220px 0 200px; /* Adjust left margin to account for wider left pane */
 }
 
 /* Table container for fixed positioning */
