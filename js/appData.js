@@ -587,7 +587,7 @@ function appData() {
         },
         
         calculatePoints(model) {
-            // Phase 1: Calculate base values
+            // Phase 1: Calculate base values (including multipliers)
             const baseValues = {
                 movement: this.getBasePoints('movement', model.movement),
                 weaponSkill: this.getBasePoints('weaponSkill', model.weaponSkill),
@@ -602,11 +602,32 @@ function appData() {
                 invulnSave: this.getBasePoints('invulnSave', model.invulnSave)
             };
             
-            // Phase 2: Apply weight matrix adjustments
+            // Phase 2: Apply weight matrix adjustments to get model stat cost
             const adjustedValues = this.applyWeightMatrix(baseValues, model);
+            const modelStatTotal = Object.values(adjustedValues).reduce((a, b) => a + b, 0);
+
+            // Phase 3: Calculate equipment cost
+            let equipmentCost = 0;
+            const statOrder = this.getStatOrder();
+            if (model.assignedArmoryItemIds && Array.isArray(model.assignedArmoryItemIds)) {
+                model.assignedArmoryItemIds.forEach(itemId => {
+                    const item = this.getArmoryItemById(itemId);
+                    if (item && item.statWeights && Array.isArray(item.statWeights)) {
+                        let currentItemCost = item.baseCost || 0;
+                        statOrder.forEach((stat, index) => {
+                            if (index < item.statWeights.length) {
+                                const modelStatBaseCost = baseValues[stat]; // Use base value (after multiplier)
+                                const itemWeight = item.statWeights[index];
+                                currentItemCost += modelStatBaseCost * itemWeight;
+                            }
+                        });
+                        equipmentCost += currentItemCost;
+                    }
+                });
+            }
             
-            // Return raw total points
-            return 10 + Object.values(adjustedValues).reduce((a, b) => a + b, 0);
+            // Final cost: Base 10 + adjusted stat cost + equipment cost
+            return 10 + modelStatTotal + equipmentCost;
         },
 
         getPointBreakdown(model) {
@@ -628,11 +649,47 @@ function appData() {
             // Phase 2: Apply weight matrix adjustments
             const adjustedValues = this.applyWeightMatrix(baseValues, model);
             
-            // Return calculation details
+            // Phase 3: Calculate equipment cost breakdown
+            let equipmentTotalCost = 0;
+            const equipmentBreakdown = {};
+            const statOrder = this.getStatOrder();
+            if (model.assignedArmoryItemIds && Array.isArray(model.assignedArmoryItemIds)) {
+                model.assignedArmoryItemIds.forEach(itemId => {
+                    const item = this.getArmoryItemById(itemId);
+                    if (item && item.statWeights && Array.isArray(item.statWeights)) {
+                        const itemName = item.name || `Item ${item.id}`;
+                        let currentItemCost = item.baseCost || 0;
+                        const statContributions = {};
+                        statOrder.forEach((stat, index) => {
+                            if (index < item.statWeights.length) {
+                                const modelStatBaseCost = baseValues[stat];
+                                const itemWeight = item.statWeights[index];
+                                const contribution = modelStatBaseCost * itemWeight;
+                                currentItemCost += contribution;
+                                statContributions[stat] = contribution;
+                            }
+                        });
+                        equipmentBreakdown[itemName] = {
+                            base: item.baseCost || 0,
+                            stats: statContributions,
+                            total: currentItemCost
+                        };
+                        equipmentTotalCost += currentItemCost;
+                    }
+                });
+            }
+            
+            // Calculate total cost
+            const modelStatTotal = Object.values(adjustedValues).reduce((a, b) => a + b, 0);
+            const total = 10 + modelStatTotal + equipmentTotalCost;
+            
+            // Return calculation details including equipment
             return {
                 baseValues: {...baseValues},
                 adjustedValues: {...adjustedValues},
-                total: 10 + Object.values(adjustedValues).reduce((a, b) => a + b, 0)
+                equipmentBreakdown: equipmentBreakdown,
+                equipmentTotalCost: equipmentTotalCost,
+                total: total
             };
         },
 
@@ -1708,6 +1765,83 @@ function appData() {
             return null; // Return null if identifier is neither or not found
         },
 
+        // ++ Add function to map item weights (-2 to 2) to color scale (0 to 2) ++
+        mapWeightToColorValue(weight) {
+            // Ensure weight is treated as a number
+            const numWeight = parseFloat(weight) || 0;
+            // Clamp the weight between -2 and 2
+            const clampedWeight = Math.max(-2, Math.min(2, numWeight));
+            // Map [-2, 2] to [0, 2]
+            // Shift range from [-2, 2] to [0, 4] by adding 2
+            // Scale range from [0, 4] to [0, 2] by dividing by 2
+            return (clampedWeight + 2) / 2;
+        },
+        // ++ End function ++
+
+        // ++ Add Armory Stat Spinner Functions ++
+        incrementArmoryStat(item, statName) {
+            const maxValue = 10; // Assuming a general max value for simplicity
+            if (item[statName] < maxValue) {
+                item[statName]++;
+            }
+            this.saveArmoryItems(); // Save after change
+        },
+        decrementArmoryStat(item, statName) {
+            const minValue = 1; // Assuming a general min value
+            if (item[statName] > minValue) {
+                item[statName]--;
+            }
+            this.saveArmoryItems(); // Save after change
+        },
+        incrementArmoryAP(item) {
+            // AP gets numerically larger but is worse (e.g., AP 5 is worse than AP 2)
+            let currentAP = parseInt(item.ap, 10);
+            if (isNaN(currentAP) || currentAP === 0) { // Treat '-' or 0 as starting point before 6
+                item.ap = 6;
+            } else if (currentAP < 6) {
+                item.ap = currentAP + 1;
+            }
+            // No change if already 6 (or higher, though UI should prevent >6)
+            this.saveArmoryItems(); // Save after change
+        },
+        decrementArmoryAP(item) {
+            // AP gets numerically smaller and better
+            let currentAP = parseInt(item.ap, 10);
+             if (!isNaN(currentAP)) {
+                if (currentAP > 1 && currentAP <= 6) {
+                   item.ap = currentAP - 1;
+                } else if (currentAP === 1) {
+                    item.ap = 1; // Cannot go below 1
+                } else {
+                   // If it's 0 or invalid, set to 1 as the 'best' value
+                   item.ap = 1;
+                }
+             } else {
+                // Handle cases where AP might be '-' or invalid
+                item.ap = 6; // Start from the 'worst' valid number when decreasing from '-'?
+             }
+            this.saveArmoryItems(); // Save after change
+        },
+        incrementArmoryWeight(item, index) {
+            const maxValue = 2.0;
+            const step = 0.1;
+            let currentValue = parseFloat(item.statWeights[index]) || 0;
+            if (currentValue < maxValue) {
+                item.statWeights[index] = parseFloat((currentValue + step).toFixed(1));
+            }
+            this.saveArmoryItems(); // Save after change
+        },
+        decrementArmoryWeight(item, index) {
+            const minValue = -2.0;
+            const step = 0.1;
+            let currentValue = parseFloat(item.statWeights[index]) || 0;
+            if (currentValue > minValue) {
+                item.statWeights[index] = parseFloat((currentValue - step).toFixed(1));
+            }
+            this.saveArmoryItems(); // Save after change
+        },
+        // ++ End Armory Stat Spinner Functions ++
+
         // --- Armory Item Management ---
 
         // --- Add Direct Equipment Assignment Functions ---
@@ -1766,5 +1900,7 @@ function appData() {
         }
         // --- End Direct Equipment Assignment Functions ---
 
-    };
+        // --- End Helper Functions ---
+
+    }; // ADDED COMMA HERE
 } 

@@ -56,9 +56,27 @@
                                     </template>
                                     <!-- Add percentage contribution calculation -->
                                     <span class="percentage-value" 
-                                          x-text="' (' + Math.round((breakdown.adjustedValues[stat] / (breakdown.total - 10)) * 100) + '%)'"></span>
+                                          x-text="' (' + Math.round((breakdown.adjustedValues[stat] / (breakdown.total - 10 - (breakdown.equipmentTotalCost || 0))) * 100) + '%)'"></span>
                                 </div>
                             </template>
+                            
+                            <!-- ++ Add Equipment Breakdown ++ -->
+                            <template x-if="breakdown.equipmentTotalCost > 0">
+                                <div class="breakdown-subheader">Equipment Cost:</div>
+                                <template x-for="(itemDetails, itemName) in breakdown.equipmentBreakdown" :key="itemName">
+                                    <div class="breakdown-item equipment-item">
+                                        <span class="equipment-name" x-text="itemName + ':'"></span>
+                                        <span class="equipment-cost" x-text="itemDetails.total.toFixed(1)"></span>
+                                        <!-- Optional: Tooltip for stat contributions -->
+                                        <span class="tooltip" :data-tooltip="'Base: ' + itemDetails.base.toFixed(1) + ' + Stat Adjustments'"> (?)</span>
+                                    </div>
+                                </template>
+                                <div class="breakdown-subtotal">
+                                    Equipment Total: <span x-text="breakdown.equipmentTotalCost.toFixed(1)"></span>
+                                </div>
+                            </template>
+                            <!-- ++ End Equipment Breakdown ++ -->
+
                             <div class="breakdown-total">
                                 Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
                             </div>
