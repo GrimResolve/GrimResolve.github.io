@@ -1,7 +1,9 @@
 function appData() {
     return {
+        nextModelId: 6, // Start counting from the next available ID
         models: [
             {
+                id: 1, // Added ID
                 name: 'Imperial Guardsman',
                 movement: 6,
                 weaponSkill: 3,
@@ -16,6 +18,7 @@ function appData() {
                 invulnSave: '-'
             },
             {
+                id: 2, // Added ID
                 name: 'Space Marine',
                 movement: 6,
                 weaponSkill: 4,
@@ -30,6 +33,7 @@ function appData() {
                 invulnSave: '-'
             },
             {
+                id: 3, // Added ID
                 name: 'Terminator',
                 movement: 5,
                 weaponSkill: 4,
@@ -44,6 +48,7 @@ function appData() {
                 invulnSave: '5+'
             },
             {
+                id: 4, // Added ID
                 name: 'Ork Warboy',
                 movement: 5,
                 weaponSkill: 4,
@@ -58,6 +63,7 @@ function appData() {
                 invulnSave: '-'
             },
             {
+                id: 5, // Added ID
                 name: 'Eldar Guardian',
                 movement: 6,
                 weaponSkill: 4,
@@ -76,12 +82,17 @@ function appData() {
         showPointConfig: true,
         currentStat: 'weights',
         
-        // Scenario Simulation Data
-        scenarioConfig: {
-            meleeAttack: { targetIndex: -1 }
-            // Add other scenarios like 'rangedAttack', 'meleeDefense', 'rangedDefense' here later
-        },
-        // currentScenarioType: 'meleeAttack', // Add this later when switching scenarios is needed
+        // -- Removed Scenario Simulation Data --
+        // scenarioConfig: {
+        //     meleeAttack: { targetIndex: -1 }
+        // },
+
+        // ++ Added New Scenario Structure ++
+        scenarios: [], // Array to hold defined scenario objects
+        selectedScenarioId: null, // ID of the scenario currently being edited
+
+        // ++ Added View Control ++
+        currentView: 'models', // 'models' or 'scenarios'
 
         // Point value lookup tables for each stat
         pointValueLookups: {
@@ -294,11 +305,38 @@ function appData() {
             if (this.models.length > 0) {
                 this.selectedModel = this.models[0];
             }
+
+            // Load scenarios
+            const savedScenarios = localStorage.getItem('grimResolverScenarios');
+            if (savedScenarios) {
+                try {
+                    this.scenarios = JSON.parse(savedScenarios);
+                    console.log('Scenarios loaded successfully.');
+                } catch (e) {
+                    console.error('Error parsing saved scenarios:', e);
+                    // Optionally clear the invalid data
+                    // localStorage.removeItem('grimResolverScenarios'); 
+                }
+            }
+
+            // If no scenarios were loaded, create a default one
+            if (this.scenarios.length === 0) {
+                console.log('No saved scenarios found, creating default scenario.');
+                const defaultScenario = {
+                    id: 'scenario_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                    name: 'Melee vs Guardsman',
+                    type: 'meleeAttack',
+                    targetModelIds: [1] // Target the Imperial Guardsman (ID 1)
+                };
+                this.scenarios.push(defaultScenario);
+                this.saveScenarios(); // Save the newly created default scenario
+            }
         },
         
         addModel() {
             const lastModel = this.models[this.models.length - 1];
             const newModel = {
+                id: this.nextModelId++, // Assign next ID and increment
                 name: lastModel.name,
                 movement: lastModel.movement,
                 weaponSkill: lastModel.weaponSkill,
@@ -319,6 +357,7 @@ function appData() {
         duplicateModel(index) {
             const modelToDuplicate = this.models[index];
             const newModel = {
+                id: this.nextModelId++, // Assign next ID and increment
                 name: modelToDuplicate.name,
                 movement: modelToDuplicate.movement,
                 weaponSkill: modelToDuplicate.weaponSkill,
@@ -585,18 +624,19 @@ function appData() {
                     const importedModels = modelLines.map(line => {
                         const values = line.split(',');
                         return {
-                            name: values[0] === 'Unnamed' ? '' : values[0],
-                            movement: parseInt(values[1]),
-                            weaponSkill: parseInt(values[2]),
-                            ballisticSkill: values[3],
-                            strength: parseInt(values[4]),
-                            toughness: parseInt(values[5]),
-                            wounds: parseInt(values[6]),
-                            initiative: parseInt(values[7]),
-                            attacks: parseInt(values[8]),
-                            leadership: parseInt(values[9]),
-                            save: values[10],
-                            invulnSave: values[11]
+                            id: parseInt(values[0]),
+                            name: values[1] === 'Unnamed' ? '' : values[1],
+                            movement: parseInt(values[2]),
+                            weaponSkill: parseInt(values[3]),
+                            ballisticSkill: values[4],
+                            strength: parseInt(values[5]),
+                            toughness: parseInt(values[6]),
+                            wounds: parseInt(values[7]),
+                            initiative: parseInt(values[8]),
+                            attacks: parseInt(values[9]),
+                            leadership: parseInt(values[10]),
+                            save: values[11],
+                            invulnSave: values[12]
                         };
                     });
                     
@@ -890,7 +930,109 @@ function appData() {
             return `${xPos}px ${yPos}px`;
         },
 
-        // --- Scenario Simulation Logic ---
+        // Computed property to get the currently selected scenario object
+        get selectedScenario() {
+            if (!this.selectedScenarioId) return null;
+            return this.scenarios.find(s => s.id === this.selectedScenarioId);
+        },
+
+        // --- Scenario Management Functions ---
+        addScenario() {
+            const newScenario = {
+                id: 'scenario_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7), // Reasonably unique ID
+                name: 'New Scenario',
+                type: 'meleeAttack', // Default type
+                targetModelIds: [], // Default empty targets
+                // Add other default fields as needed for other types later
+                // weaponProfile: { name: '', shots: '', s: '', ap: '', d: '' }
+            };
+            this.scenarios.push(newScenario);
+            this.selectedScenarioId = newScenario.id; // Select the new scenario for editing
+        },
+
+        deleteScenario() {
+            if (!this.selectedScenarioId) return; // No scenario selected
+
+            if (confirm('Are you sure you want to delete this scenario?')) {
+                const index = this.scenarios.findIndex(s => s.id === this.selectedScenarioId);
+                if (index > -1) {
+                    this.scenarios.splice(index, 1);
+                    this.selectedScenarioId = null; // Deselect after deletion
+                } else {
+                    console.error("Scenario to delete not found:", this.selectedScenarioId);
+                    this.selectedScenarioId = null; // Deselect even if not found, to be safe
+                }
+            }
+            this.saveScenarios(); // Save after deleting
+        },
+
+        exportScenarios() {
+            if (this.scenarios.length === 0) {
+                alert("No scenarios to export.");
+                return;
+            }
+            const data = JSON.stringify(this.scenarios, null, 2); // Pretty print JSON
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'grim_resolver_scenarios.json');
+            a.click();
+            URL.revokeObjectURL(url);
+            console.log('Scenarios exported.');
+        },
+
+        importScenarios(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    // Basic validation: is it an array?
+                    if (Array.isArray(importedData)) {
+                        // Optional: More validation could be added here to check scenario structure
+                        if (confirm(`Replace current scenarios (${this.scenarios.length}) with ${importedData.length} imported scenarios?`)) {
+                            this.scenarios = importedData;
+                            this.selectedScenarioId = null; // Deselect any currently selected scenario
+                            this.saveScenarios(); // Save the newly imported scenarios
+                            alert('Scenarios imported successfully!');
+                        }
+                    } else {
+                        alert('Invalid scenarios file. The file must contain a JSON array.');
+                    }
+                } catch (error) {
+                    alert('Error importing scenarios. Make sure it is a valid JSON file.');
+                    console.error('Scenario import error:', error);
+                }
+                // Clear file input value to allow importing the same file again if needed
+                event.target.value = '';
+            };
+            reader.onerror = (e) => {
+                alert('Error reading file.');
+                console.error('File reading error:', e);
+                event.target.value = ''; 
+            };
+            reader.readAsText(file);
+        },
+
+        // Helper function to save scenarios to localStorage
+        saveScenarios() {
+            localStorage.setItem('grimResolverScenarios', JSON.stringify(this.scenarios));
+            console.log('Scenarios saved.');
+        },
+
+        // --- End Scenario Management ---
+
+        // --- Scenario Calculation Logic (Re-implemented) ---
+
+        // Helper to find a model by its ID
+        getModelById(id) {
+            // Convert id to number just in case it was stored/passed as string from multi-select
+            const numericId = parseInt(id, 10);
+            return this.models.find(m => m.id === numericId);
+        },
 
         // Helper to parse save values like '3+' or '-' into numbers (or a high number for '-')
         parseSaveValue(saveStr) {
@@ -910,13 +1052,18 @@ function appData() {
         // Calculate hit probability based on WS comparison
         getHitProbability(attackerWS, targetWS) {
             let rollNeeded;
+            // Ensure input are numbers
+            attackerWS = parseInt(attackerWS, 10);
+            targetWS = parseInt(targetWS, 10);
+            if (isNaN(attackerWS) || isNaN(targetWS)) return 0; // Or handle error
+
             if (attackerWS >= targetWS * 2) {
                 rollNeeded = 2;
             } else if (attackerWS > targetWS) {
                 rollNeeded = 3;
-            } else if (attackerWS == targetWS) {
+            } else if (attackerWS === targetWS) {
                 rollNeeded = 4;
-            } else if (attackerWS * 2 <= targetWS) {
+            } else if (targetWS > 0 && attackerWS * 2 <= targetWS) { // Avoid division by zero if targetWS is 0
                 rollNeeded = 6;
             } else { // attackerWS < targetWS but not half or less
                 rollNeeded = 5;
@@ -927,19 +1074,23 @@ function appData() {
         // Calculate wound probability based on S vs T comparison
         getWoundProbability(attackerS, targetT) {
             let rollNeeded;
+             // Ensure input are numbers
+            attackerS = parseInt(attackerS, 10);
+            targetT = parseInt(targetT, 10);
+            if (isNaN(attackerS) || isNaN(targetT)) return 0; // Or handle error
+            if (targetT <= 0) return 1.0; // Auto-wound if T is 0 or less
+
             if (attackerS >= targetT * 2) {
                 rollNeeded = 2;
             } else if (attackerS > targetT) {
                 rollNeeded = 3;
-            } else if (attackerS == targetT) {
+            } else if (attackerS === targetT) {
                 rollNeeded = 4;
             } else if (attackerS * 2 <= targetT) {
                 rollNeeded = 6;
             } else { // attackerS < targetT but not half or less
                 rollNeeded = 5;
             }
-            // Add check for T0/Invalid toughness? Assume T >= 1 for now
-            if (targetT <= 0) return 1.0; // Auto-wound if T is 0 or less? Or handle error?
             return this.getD6Probability(rollNeeded);
         },
 
@@ -948,63 +1099,80 @@ function appData() {
             const saveVal = this.parseSaveValue(targetSave);
             const invulnVal = this.parseSaveValue(targetInvuln);
             const bestSave = Math.min(saveVal, invulnVal); // Takes the better of the two saves
-
-            if (bestSave >= 7) return 1.0; // No save or 7+ save always fails
-
-            // Probability of *failing* is (rollNeeded - 1) / 6
-            return 1.0 - this.getD6Probability(bestSave);
+            return 1.0 - this.getD6Probability(bestSave); // Probability of failing
         },
 
-        // Main function to calculate scenario outcomes (currently only Melee Attack)
-        calculateScenarioOutcome() {
-            if (!this.selectedModel || this.scenarioConfig.meleeAttack.targetIndex < 0) {
-                return "Select an attacker and target model.";
+        // --- Main Scenario Calculation Dispatcher ---
+        getScenarioResults(scenario, perspectiveModel) {
+            if (!scenario || !perspectiveModel) return "Invalid scenario or perspective model.";
+
+            switch (scenario.type) {
+                case 'meleeAttack':
+                    return this.calculateMeleeAttackOutcome(scenario, perspectiveModel);
+                // case 'rangedAttack':
+                //     return this.calculateRangedAttackOutcome(scenario, perspectiveModel);
+                // case 'meleeDefense':
+                //     return this.calculateMeleeDefenseOutcome(scenario, perspectiveModel);
+                // case 'rangedDefense':
+                //     return this.calculateRangedDefenseOutcome(scenario, perspectiveModel);
+                default:
+                    return `Scenario type '${scenario.type}' not implemented yet.`;
             }
-
-            const attacker = this.selectedModel;
-            const target = this.models[this.scenarioConfig.meleeAttack.targetIndex];
-
-            if (!attacker || !target) {
-                return "Error: Attacker or Target model not found.";
-            }
-            
-            // Check for necessary stats
-            if (typeof attacker.attacks === 'undefined' || attacker.attacks === null ||
-                typeof attacker.weaponSkill === 'undefined' || attacker.weaponSkill === null ||
-                typeof attacker.strength === 'undefined' || attacker.strength === null ||
-                typeof target.weaponSkill === 'undefined' || target.weaponSkill === null || // Needed for WS comparison
-                typeof target.toughness === 'undefined' || target.toughness === null ||
-                typeof target.save === 'undefined' || typeof target.invulnSave === 'undefined') {
-                return "Error: Missing required stats on attacker or target.";
-            }
-
-
-            // Calculate probabilities
-            const pHit = this.getHitProbability(attacker.weaponSkill, target.weaponSkill);
-            const pWound = this.getWoundProbability(attacker.strength, target.toughness);
-            const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave);
-
-            // --- TEMP LOGGING ---
-            console.log(`Scenario Calc: Attacker=${attacker.name}, Target=${target.name}`);
-            console.log(`  Raw Stats: Att(WS${attacker.weaponSkill}, S${attacker.strength}, A${attacker.attacks}), Tgt(WS${target.weaponSkill}, T${target.toughness}, Sv${target.save}, Inv${target.invulnSave})`);
-            console.log(`  Probabilities: pHit=${pHit.toFixed(3)}, pWound=${pWound.toFixed(3)}, pFailSave=${pFailSave.toFixed(3)}`);
-            // --- END TEMP LOGGING ---
-
-            // Calculate expected wounds (assuming 1 damage per unsaved wound for now)
-            const expectedWounds = attacker.attacks * pHit * pWound * pFailSave;
-            
-            // Calculate expected wounds per point
-            const attackerPoints = this.getRelativePoints(attacker); // Use existing function
-            const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0;
-
-
-            return `Combat against ${target.name || 'Unnamed Target'}: \n` +
-                   `  Hits: ${(attacker.attacks * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)\n` +
-                   `  Wounds: ${(attacker.attacks * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)\n` +
-                   `  Unsaved Wounds: ${expectedWounds.toFixed(2)} (Save: ${((1-pFailSave) * 100).toFixed(0)}%)\n` +
-                   `  Expected Wounds per Point: ${(efficiency).toFixed(4)}`;
         },
 
-        // --- End Scenario Simulation Logic ---
+        // --- Specific Scenario Calculators ---
+        calculateMeleeAttackOutcome(scenario, attacker) {
+            if (!attacker) return "Attacker not found.";
+            if (!scenario.targetModelIds || scenario.targetModelIds.length === 0) {
+                return "No targets selected for this melee scenario.";
+            }
+
+            let results = [];
+            // Calculate outcome for each target
+            for (const targetId of scenario.targetModelIds) {
+                const target = this.getModelById(targetId);
+                if (!target) {
+                    results.push(` - Target ID ${targetId}: Not found`);
+                    continue; // Skip to next target if this one isn't found
+                }
+
+                // Check for necessary stats (basic check)
+                if (typeof attacker.attacks === 'undefined' || typeof attacker.weaponSkill === 'undefined' || typeof attacker.strength === 'undefined' ||
+                    typeof target.weaponSkill === 'undefined' || typeof target.toughness === 'undefined' || typeof target.save === 'undefined' || typeof target.invulnSave === 'undefined') {
+                    results.push(` - Target ${target.name || '(Unnamed)'}: Missing required stats.`);
+                    continue;
+                }
+
+                // Calculate probabilities
+                const pHit = this.getHitProbability(attacker.weaponSkill, target.weaponSkill);
+                const pWound = this.getWoundProbability(attacker.strength, target.toughness);
+                const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave);
+
+                // Calculate expected wounds (assuming 1 damage per unsaved wound for now)
+                const expectedWounds = attacker.attacks * pHit * pWound * pFailSave;
+
+                // Calculate expected wounds per point (using attacker's points)
+                const attackerPoints = this.calculatePoints(attacker); // Use the absolute points calculation
+                // Avoid division by zero or negative points
+                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0; 
+
+                // Format result for this target
+                results.push(
+                    `  vs ${target.name || '(Unnamed)'}: 
+` +
+                    `    Hits: ${(attacker.attacks * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)\n` +
+                    `    Wounds: ${(attacker.attacks * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)\n` +
+                    `    Unsaved: ${expectedWounds.toFixed(2)} (Save: ${((1 - pFailSave) * 100).toFixed(0)}%)\n` +
+                    `    Wounds/Point: ${efficiency.toFixed(4)}\n` +
+                    `    Efficiency: ${(1000*efficiency).toFixed(2)}`
+                );
+            }
+            // Combine results for all targets
+            return results.join('\n\n'); // Add extra newline between target results
+        }
+        // Add calculateRangedAttackOutcome, etc. here later
+
+        // --- End Scenario Calculation Logic ---
+
     };
 } 

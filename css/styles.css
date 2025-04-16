@@ -12,18 +12,51 @@
     height: 50px; /* Fixed height */
     box-sizing: border-box;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 20px; /* Add gap between header items */
 }
 
 .header h1 {
     margin: 0;
     font-size: 24px;
+    white-space: nowrap; /* Prevent title wrapping */
+}
+
+/* Container for Tabs within Header */
+.view-tabs-header {
+    display: flex; 
+    flex-grow: 1; /* Allow tabs to take up space */
+    justify-content: center; /* Center tabs */
+}
+
+.view-tabs-header button {
+    padding: 8px 15px; /* Slightly smaller padding */
+    margin: 0 2px;
+    border: none; /* Remove border */
+    background-color: transparent; /* Transparent background */
+    color: #3e4e3e; /* Header text color */
+    cursor: pointer;
+    border-radius: 4px; /* Optional: slight rounding */
+    font-size: 0.95em;
+    font-weight: bold;
+    border-bottom: 3px solid transparent; /* Space for active indicator */
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.view-tabs-header button:hover {
+    background-color: rgba(255, 255, 255, 0.2); /* Subtle hover */
+}
+
+.view-tabs-header button.active {
+    /* background-color: rgba(255, 255, 255, 0.3); */ /* Slightly stronger background */
+    border-bottom: 3px solid #4CAF50; /* Active indicator line */
+    color: #000; /* Darker text for active */
 }
 
 .header-buttons {
     display: flex;
     gap: 10px;
+    margin-left: auto; /* Push buttons to the right */
 }
 
 /* Adjust body padding to account for fixed header exactly */
@@ -34,7 +67,8 @@ body {
     padding-top: 10px; /* Match header height + some padding */
     background-color: #f0f0f0;
     height: 100vh;
-    overflow: hidden; /* Prevent body scrolling */
+    overflow-y: hidden; /* Allow vertical scrolling */
+    
 }
 
 .hidden {
@@ -812,4 +846,158 @@ button:hover {
     border-bottom: 2px solid #45a049;
     padding-bottom: 8px;
     margin-top: 0;
+}
+
+/* View Tab Navigation */
+.view-tabs {
+    padding-top: 70px; /* Space below fixed header */
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 10px;
+    text-align: center; /* Center the tabs */
+}
+
+.view-tabs button {
+    padding: 10px 20px;
+    margin: 0 5px;
+    border: 1px solid #ccc;
+    background-color: #e0e0e0;
+    color: #333;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0; /* Rounded top corners */
+    font-size: 1em;
+    transition: background-color 0.2s ease;
+}
+
+.view-tabs button:hover {
+    background-color: #d0d0d0;
+}
+
+.view-tabs button.active {
+    background-color: #f0f0f0; /* Match body background */
+    border-bottom: 1px solid #f0f0f0; /* Hide bottom border */
+    font-weight: bold;
+    color: #000;
+}
+
+/* Scenario Editor Specific Styles */
+.scenario-editor-view {
+    padding: 20px;
+    padding-top: 70px; /* Account for header */
+    height: calc(100vh - 70px); /* Fill remaining viewport height */
+    box-sizing: border-box; /* Include padding in height */
+    overflow: hidden; /* Prevent this view from scrolling body */
+}
+
+.scenario-editor-layout {
+    display: flex;
+    gap: 20px;
+    max-width: 1200px; /* Adjust as needed */
+    margin: 0 auto;
+    height: 100%; /* Fill parent height */
+}
+
+.scenario-list-pane {
+    flex: 1;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    /* max-height: 70vh; */ /* Remove fixed max-height */
+    overflow-y: auto; /* Allow internal scrolling */
+}
+
+.scenario-list-pane h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.scenario-list-pane ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+}
+
+.scenario-list-pane li {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.scenario-list-pane li:hover {
+    background-color: #f5f5f5;
+}
+
+.scenario-list-pane li.selected-scenario {
+    background-color: #d1eaff; /* Light blue highlight */
+    font-weight: bold;
+}
+
+.scenario-list-pane button {
+    margin-right: 10px;
+}
+
+.scenario-form-pane {
+    flex: 2;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow-y: auto; /* Allow internal scrolling */
+}
+
+.scenario-form-pane h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+/* Add basic form styling */
+.scenario-form-pane .form-group {
+    margin-bottom: 15px;
+}
+
+.scenario-form-pane label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.scenario-form-pane input[type="text"],
+.scenario-form-pane select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.scenario-form-pane select[multiple] {
+    min-height: 80px; /* Give multi-select some initial height */
+}
+
+.scenario-form-pane small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+.scenario-type-fields {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+.scenario-type-fields h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
 } 

@@ -9,580 +9,675 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body x-data="appData()" x-init="init()">
     <div class="header">
         <h1>Grim Resolver</h1>
+
+        <!-- Moved Navigation Tabs Inside Header -->
+        <div class="view-tabs-header">
+            <button @click="currentView = 'models'" :class="{'active': currentView === 'models'}">Model Editor</button>
+            <button @click="currentView = 'scenarios'" :class="{'active': currentView === 'scenarios'}">Scenario Editor</button>
+        </div>
+
         <div class="header-buttons">
-            <button class="export-btn" @click="exportModels">Export to CSV</button>
-            <label class="import-btn" for="importInput">Import from CSV</label>
+            <button class="export-btn" @click="exportModels">Export Models</button>
+            <label class="import-btn" for="importInput">Import Models</label>
             <input type="file" id="importInput" accept=".csv" @change="importModels($event)">
         </div>
     </div>
 
-    <div class="three-column-layout" x-data="appData()">
-        <div class="left-pane">
-            <h2>Point Breakdown</h2>
-            <div x-data="{ 
-                capabilities: selectedModel ? getCapabilities(selectedModel) : null,
-                breakdown: selectedModel ? getPointBreakdown(selectedModel) : null,
-                chart: null,
-                pieChart: null
-            }"
-            x-effect="capabilities = selectedModel ? getCapabilities(selectedModel) : null; 
-                      breakdown = selectedModel ? getPointBreakdown(selectedModel) : null;">
-                
-                <!-- Point Breakdown Section -->
-                <div class="point-breakdown" x-show="selectedModel !== null">
-                    <div class="breakdown-header">Absolute Point Calculation:</div>
-                    <div class="breakdown-base">Base Cost: 10</div>
-                    <template x-if="breakdown">
-                        <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
-                            <div class="breakdown-item">
-                                <span x-text="formatStatName(stat) + ':'"></span>
-                                <span x-text="baseValue.toFixed(1)"></span>
-                                <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
-                                    <span class="adjusted-value" 
-                                        x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
-                                </template>
-                                <!-- Add percentage contribution calculation -->
-                                <span class="percentage-value" 
-                                      x-text="' (' + Math.round((breakdown.adjustedValues[stat] / (breakdown.total - 10)) * 100) + '%)'"></span>
+    <!-- Model Editor View -->
+    <div class="model-editor-view" x-show="currentView === 'models'">
+        <div class="three-column-layout">
+            <div class="left-pane">
+                <h2>Point Breakdown</h2>
+                <div x-data="{ 
+                    capabilities: selectedModel ? getCapabilities(selectedModel) : null,
+                    breakdown: selectedModel ? getPointBreakdown(selectedModel) : null,
+                    chart: null,
+                    pieChart: null
+                }"
+                x-effect="capabilities = selectedModel ? getCapabilities(selectedModel) : null; 
+                          breakdown = selectedModel ? getPointBreakdown(selectedModel) : null;">
+                    
+                    <!-- Point Breakdown Section -->
+                    <div class="point-breakdown" x-show="selectedModel !== null">
+                        <div class="breakdown-header">Absolute Point Calculation:</div>
+                        <div class="breakdown-base">Base Cost: 10</div>
+                        <template x-if="breakdown">
+                            <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
+                                <div class="breakdown-item">
+                                    <span x-text="formatStatName(stat) + ':'"></span>
+                                    <span x-text="baseValue.toFixed(1)"></span>
+                                    <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
+                                        <span class="adjusted-value" 
+                                            x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
+                                    </template>
+                                    <!-- Add percentage contribution calculation -->
+                                    <span class="percentage-value" 
+                                          x-text="' (' + Math.round((breakdown.adjustedValues[stat] / (breakdown.total - 10)) * 100) + '%)'"></span>
+                                </div>
+                            </template>
+                            <div class="breakdown-total">
+                                Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
                             </div>
                         </template>
-                        <div class="breakdown-total">
-                            Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
-                        </div>
-                    </template>
-                    <template x-if="!breakdown">
-                        <div>Select a model to see breakdown</div>
-                    </template>
-                </div>
+                        <template x-if="!breakdown">
+                            <div>Select a model to see breakdown</div>
+                        </template>
+                    </div>
 
-                <!-- Capability Bar Chart -->
-                <div class="capability-chart" x-show="selectedModel !== null"
-                    x-init="$watch('capabilities', (value) => { 
-                        if (value) {
-                            if (chart) chart.destroy();
-                            const ctx = $refs.capabilityCanvas.getContext('2d');
-                            
-                            // Calculate the maximum value for the y-axis
-                            const dataValues = [
-                                value.shooting,
-                                value.combat,
-                                value.defense,
-                                value.movement,
-                                value.other
-                            ];
-                            const maxValue = Math.max(...dataValues);
-                            const yAxisMax = Math.max(20, Math.ceil(maxValue * 1.1)); // At least 20, with 10% headroom
-                            
-                            chart = new Chart(ctx, {
-                                type: 'bar',
-                                data: {
-                                    labels: ['Shooting', 'Combat', 'Defense', 'Movement', 'Other'],
-                                    datasets: [{
-                                        label: 'Capability Points',
-                                        data: dataValues,
-                                        backgroundColor: [
-                                            'rgba(255, 120, 0, 0.8)',   // Fiery orange (Shooting)
-                                            'rgba(180, 20, 20, 0.8)',    // Blood red (Combat)
-                                            'rgba(70, 130, 180, 0.8)',   // Steel blue (Defense)
-                                            'rgba(50, 200, 100, 0.8)',    // Swift green (Movement)
-                                            'rgba(199, 21, 133, 0.8)'    // Bright pinkish purple (Other)
-                                        ],
-                                        borderColor: [
-                                            'rgba(255, 120, 0, 1)',     // Fiery orange (Shooting)
-                                            'rgba(180, 20, 20, 1)',      // Blood red (Combat)
-                                            'rgba(70, 130, 180, 1)',     // Steel blue (Defense)
-                                            'rgba(50, 200, 100, 1)',      // Swift green (Movement)
-                                            'rgba(199, 21, 133, 1)'      // Bright pinkish purple (Other)
-                                        ],
-                                        borderWidth: 0
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    animation: {
-                                        duration: 0 // Set animation duration to 0 to make it instant
+                    <!-- Capability Bar Chart -->
+                    <div class="capability-chart" x-show="selectedModel !== null"
+                        x-init="$watch('capabilities', (value) => { 
+                            if (value) {
+                                if (chart) chart.destroy();
+                                const ctx = $refs.capabilityCanvas.getContext('2d');
+                                
+                                // Calculate the maximum value for the y-axis
+                                const dataValues = [
+                                    value.shooting,
+                                    value.combat,
+                                    value.defense,
+                                    value.movement,
+                                    value.other
+                                ];
+                                const maxValue = Math.max(...dataValues);
+                                const yAxisMax = Math.max(20, Math.ceil(maxValue * 1.1)); // At least 20, with 10% headroom
+                                
+                                chart = new Chart(ctx, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: ['Shooting', 'Combat', 'Defense', 'Movement', 'Other'],
+                                        datasets: [{
+                                            label: 'Capability Points',
+                                            data: dataValues,
+                                            backgroundColor: [
+                                                'rgba(255, 120, 0, 0.8)',   // Fiery orange (Shooting)
+                                                'rgba(180, 20, 20, 0.8)',    // Blood red (Combat)
+                                                'rgba(70, 130, 180, 0.8)',   // Steel blue (Defense)
+                                                'rgba(50, 200, 100, 0.8)',    // Swift green (Movement)
+                                                'rgba(199, 21, 133, 0.8)'    // Bright pinkish purple (Other)
+                                            ],
+                                            borderColor: [
+                                                'rgba(255, 120, 0, 1)',     // Fiery orange (Shooting)
+                                                'rgba(180, 20, 20, 1)',      // Blood red (Combat)
+                                                'rgba(70, 130, 180, 1)',     // Steel blue (Defense)
+                                                'rgba(50, 200, 100, 1)',      // Swift green (Movement)
+                                                'rgba(199, 21, 133, 1)'      // Bright pinkish purple (Other)
+                                            ],
+                                            borderWidth: 0
+                                        }]
                                     },
-                                    scales: {
-                                        y: {
-                                            beginAtZero: true,
-                                            max: yAxisMax,
-                                            grid: {
-                                                color: 'rgba(0, 0, 0, 0.1)'
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        animation: {
+                                            duration: 0 // Set animation duration to 0 to make it instant
+                                        },
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true,
+                                                max: yAxisMax,
+                                                grid: {
+                                                    color: 'rgba(0, 0, 0, 0.1)'
+                                                },
+                                                ticks: {
+                                                    stepSize: 5
+                                                }
+                                            }
+                                        },
+                                        plugins: {
+                                            legend: {
+                                                display: false
                                             },
-                                            ticks: {
-                                                stepSize: 5
-                                            }
-                                        }
-                                    },
-                                    plugins: {
-                                        legend: {
-                                            display: false
-                                        },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: function(context) {
-                                                    return context.parsed.y.toFixed(1) + ' points';
+                                            tooltip: {
+                                                callbacks: {
+                                                    label: function(context) {
+                                                        return context.parsed.y.toFixed(1) + ' points';
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            });
-                        }
-                    });">
-                    <div class="capability-chart-header">Capability Costs:</div>
-                    <template x-if="capabilities">
-                        <div class="chart-container">
-                            <canvas x-ref="capabilityCanvas"></canvas>
-                        </div>
-                    </template>
-                    <template x-if="!capabilities">
-                        <div>Select a model to see capabilities</div>
-                    </template>
-                </div>
+                                });
+                            }
+                        });">
+                        <div class="capability-chart-header">Capability Costs:</div>
+                        <template x-if="capabilities">
+                            <div class="chart-container">
+                                <canvas x-ref="capabilityCanvas"></canvas>
+                            </div>
+                        </template>
+                        <template x-if="!capabilities">
+                            <div>Select a model to see capabilities</div>
+                        </template>
+                    </div>
 
-                <!-- Capability Pie Chart -->
-                <div class="capability-pie-chart" x-show="selectedModel !== null"
-                    x-init="$watch('capabilities', (value) => { 
-                        if (value) {
-                            if (pieChart) pieChart.destroy();
-                            const pieCtx = $refs.pieCanvas.getContext('2d');
-                            
-                            pieChart = new Chart(pieCtx, {
-                                type: 'pie',
-                                data: {
-                                    labels: ['Shooting', 'Combat', 'Defense', 'Movement', 'Other'],
-                                    datasets: [{
-                                        data: [
-                                            value.shooting,
-                                            value.combat,
-                                            value.defense,
-                                            value.movement,
-                                            value.other
-                                        ],
-                                        backgroundColor: [
-                                            'rgba(255, 120, 0, 0.8)',   // Fiery orange (Shooting)
-                                            'rgba(180, 20, 20, 0.8)',    // Blood red (Combat)
-                                            'rgba(70, 130, 180, 0.8)',   // Steel blue (Defense)
-                                            'rgba(50, 200, 100, 0.8)',    // Swift green (Movement)
-                                            'rgba(199, 21, 133, 0.8)'    // Bright pinkish purple (Other)
-                                        ],
-                                        borderColor: [
-                                            'rgba(255, 120, 0, 1)',     // Fiery orange (Shooting)
-                                            'rgba(180, 20, 20, 1)',      // Blood red (Combat)
-                                            'rgba(70, 130, 180, 1)',     // Steel blue (Defense)
-                                            'rgba(50, 200, 100, 1)',      // Swift green (Movement)
-                                            'rgba(199, 21, 133, 1)'      // Bright pinkish purple (Other)
-                                        ],
-                                        borderWidth: 0
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    animation: {
-                                        duration: 0 // Make animation instant
+                    <!-- Capability Pie Chart -->
+                    <div class="capability-pie-chart" x-show="selectedModel !== null"
+                        x-init="$watch('capabilities', (value) => { 
+                            if (value) {
+                                if (pieChart) pieChart.destroy();
+                                const pieCtx = $refs.pieCanvas.getContext('2d');
+                                
+                                pieChart = new Chart(pieCtx, {
+                                    type: 'pie',
+                                    data: {
+                                        labels: ['Shooting', 'Combat', 'Defense', 'Movement', 'Other'],
+                                        datasets: [{
+                                            data: [
+                                                value.shooting,
+                                                value.combat,
+                                                value.defense,
+                                                value.movement,
+                                                value.other
+                                            ],
+                                            backgroundColor: [
+                                                'rgba(255, 120, 0, 0.8)',   // Fiery orange (Shooting)
+                                                'rgba(180, 20, 20, 0.8)',    // Blood red (Combat)
+                                                'rgba(70, 130, 180, 0.8)',   // Steel blue (Defense)
+                                                'rgba(50, 200, 100, 0.8)',    // Swift green (Movement)
+                                                'rgba(199, 21, 133, 0.8)'    // Bright pinkish purple (Other)
+                                            ],
+                                            borderColor: [
+                                                'rgba(255, 120, 0, 1)',     // Fiery orange (Shooting)
+                                                'rgba(180, 20, 20, 1)',      // Blood red (Combat)
+                                                'rgba(70, 130, 180, 1)',     // Steel blue (Defense)
+                                                'rgba(50, 200, 100, 1)',      // Swift green (Movement)
+                                                'rgba(199, 21, 133, 1)'      // Bright pinkish purple (Other)
+                                            ],
+                                            borderWidth: 0
+                                        }]
                                     },
-                                    plugins: {
-                                        legend: {
-                                            position: 'right',
-                                            labels: {
-                                                font: {
-                                                    size: 11
-                                                }
-                                            }
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        animation: {
+                                            duration: 0 // Make animation instant
                                         },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: function(context) {
-                                                    const value = context.parsed;
-                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                                    const percentage = Math.round((value * 100) / total);
-                                                    return `${value.toFixed(1)} points (${percentage}%)`;
+                                        plugins: {
+                                            legend: {
+                                                position: 'right',
+                                                labels: {
+                                                    font: {
+                                                        size: 11
+                                                    }
+                                                }
+                                            },
+                                            tooltip: {
+                                                callbacks: {
+                                                    label: function(context) {
+                                                        const value = context.parsed;
+                                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                        const percentage = Math.round((value * 100) / total);
+                                                        return `${value.toFixed(1)} points (${percentage}%)`;
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            });
-                        }
-                    });">
-                    <div class="capability-chart-header">Cost Distribution:</div>
-                    <template x-if="capabilities">
-                        <div class="pie-chart-container">
-                            <canvas x-ref="pieCanvas"></canvas>
-                        </div>
-                    </template>
-                    <template x-if="!capabilities">
-                        <div>Select a model to see capability distribution</div>
-                    </template>
+                                });
+                            }
+                        });">
+                        <div class="capability-chart-header">Cost Distribution:</div>
+                        <template x-if="capabilities">
+                            <div class="pie-chart-container">
+                                <canvas x-ref="pieCanvas"></canvas>
+                            </div>
+                        </template>
+                        <template x-if="!capabilities">
+                            <div>Select a model to see capability distribution</div>
+                        </template>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="center-pane">
-            <div :class="{'point-config-hidden': !showPointConfig}">
-                <div class="models-table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th class="tooltip" data-tooltip="Points cost">Pts</th>
-                                <th>Name</th>
-                                <th class="tooltip" data-tooltip="Movement: How far the model can move in inches">M</th>
-                                <th class="tooltip" data-tooltip="Weapon Skill: Ability in close combat">WS</th>
-                                <th class="tooltip" data-tooltip="Ballistic Skill: Accuracy with ranged weapons (lower is better)">BS</th>
-                                <th class="tooltip" data-tooltip="Strength: Physical power of the model in combat">S</th>
-                                <th class="tooltip" data-tooltip="Toughness: Difficulty to wound the model">T</th>
-                                <th class="tooltip" data-tooltip="Wounds: Amount of damage the model can sustain">W</th>
-                                <th class="tooltip" data-tooltip="Initiative: Speed and combat reaction time">I</th>
-                                <th class="tooltip" data-tooltip="Attacks: Number of close combat attacks">A</th>
-                                <th class="tooltip" data-tooltip="Leadership: Bravery and morale of the model">Ld</th>
-                                <th class="tooltip" data-tooltip="Save: Armor save value (lower is better)">Sv</th>
-                                <th class="tooltip" data-tooltip="Invulnerable Save: Special save that cannot be modified (lower is better)">Inv</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="(model, index) in models" :key="index">
-                                <tr >
-                                    <td @click="selectedModel = model" :class="{'selected-model': selectedModel === model}">
-                                        <span style="display: inline-block; cursor: pointer;" x-text="getRelativePoints(model, index)"></span>
-                                        <span x-text="selectedModel === model ? '◀' : '▼'" class="breakdown-arrow"></span>
-                                    </td>
-                                    <td><input type="text" x-model="model.name" placeholder="Model name"></td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.movement" min="1" max="12">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'movement')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'movement')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.weaponSkill" min="1" max="10">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'weaponSkill')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'weaponSkill')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="text" x-model="model.ballisticSkill" @blur="ensurePlusSign(model, 'ballisticSkill')">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementSkill(model, 'ballisticSkill')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementSkill(model, 'ballisticSkill')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.strength" min="1" max="10">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'strength')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'strength')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.toughness" min="1" max="10">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'toughness')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'toughness')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.wounds" min="1" max="10">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'wounds')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'wounds')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.initiative" min="1" max="10">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'initiative')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'initiative')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.attacks" min="1" max="10">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'attacks')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'attacks')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="number" x-model.number="model.leadership" min="1" max="10">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementNumeric(model, 'leadership')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementNumeric(model, 'leadership')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="text" x-model="model.save" @blur="ensurePlusSign(model, 'save')">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementSkill(model, 'save')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementSkill(model, 'save')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skill-input-wrapper">
-                                            <input type="text" x-model="model.invulnSave" @blur="ensurePlusSign(model, 'invulnSave')">
-                                            <div class="spinner-buttons">
-                                                <button class="spinner-button" @click="incrementSkill(model, 'invulnSave')" title="Increase">▲</button>
-                                                <button class="spinner-button" @click="decrementSkill(model, 'invulnSave')" title="Decrease">▼</button>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <button class="delete-btn tooltip" @click="removeModel(index)" :disabled="models.length === 1" data-tooltip="Delete this model">X</button>
-                                        <button class="tooltip" @click="duplicateModel(index)" data-tooltip="Create a copy of this model">C</button>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                    <div class="import-export-container">
-                    </div>
-                    
-                    <div class="total-points hidden">
-                        Total Points: <span x-text="getTotalPoints()"></span>
-                    </div>
-                    
-                    <button @click="showPointConfig = !showPointConfig" class="config-btn">
-                        <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
-                        <span class="arrow-icon" :class="{'arrow-up': !showPointConfig}">▼</span>
-                    </button>
-                </div>
-                
-                <div class="scrollable-content">
-                    <div x-show="showPointConfig" class="point-config-tables">
-                        <div class="point-config-header">
-                            <h3>Point Value Configuration</h3>
-                            <div class="point-config-actions">
-                                <button @click="exportPointValues" class="export-btn">Export Configuration</button>
-                                <label class="import-btn" for="importPointValues">Import Configuration</label>
-                                <input type="file" id="importPointValues" @change="importPointValues($event)" accept=".json">
-                            </div>
-                        </div>
-
-                        <div class="stat-nav">
-                            <div class="stat-nav-label">Current Stat:</div>
-                            <div class="stat-buttons">
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'movement'"
-                                    x-bind:class="{'active': currentStat === 'movement'}">M</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'weaponSkill'"
-                                    x-bind:class="{'active': currentStat === 'weaponSkill'}">WS</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'ballisticSkill'"
-                                    x-bind:class="{'active': currentStat === 'ballisticSkill'}">BS</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'strength'"
-                                    x-bind:class="{'active': currentStat === 'strength'}">S</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'toughness'"
-                                    x-bind:class="{'active': currentStat === 'toughness'}">T</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'wounds'"
-                                    x-bind:class="{'active': currentStat === 'wounds'}">W</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'attacks'"
-                                    x-bind:class="{'active': currentStat === 'attacks'}">A</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'leadership'"
-                                    x-bind:class="{'active': currentStat === 'leadership'}">Ld</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'save'"
-                                    x-bind:class="{'active': currentStat === 'save'}">Sv</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'invulnSave'"
-                                    x-bind:class="{'active': currentStat === 'invulnSave'}">Inv</button>
-                                <button 
-                                    class="stat-button" 
-                                    x-on:click="currentStat = 'weights'"
-                                    x-bind:class="{'active': currentStat === 'weights'}">Weights</button>
-                            </div>
-                        </div>
-
-                        <div class="single-stat-config" x-show="currentStat !== 'weights'">
-                            <h4>
-                                <span x-text="formatStatName(currentStat)"></span>
-                                <span> Multiplier: </span>
-                                <input type="number"
-                                       x-model.number="statMultipliers[currentStat]"
-                                       min="0"
-                                       step="0.1"
-                                       class="weight-input"
-                                       @input="$nextTick(() => $forceUpdate())"
-                                       :style="{ backgroundColor: getMultiplierColor(statMultipliers[currentStat]) }">
-                            </h4>
-                            <table class="config-table">
+            <div class="center-pane">
+                <div :class="{'point-config-hidden': !showPointConfig}">
+                    <div class="models-table-container">
+                        <table>
+                            <thead>
                                 <tr>
-                                    <th>Value</th>
-                                    <th>Points</th>
-                                    <th>Scaled</th>
+                                    <th class="tooltip" data-tooltip="Points cost">Pts</th>
+                                    <th>Name</th>
+                                    <th class="tooltip" data-tooltip="Movement: How far the model can move in inches">M</th>
+                                    <th class="tooltip" data-tooltip="Weapon Skill: Ability in close combat">WS</th>
+                                    <th class="tooltip" data-tooltip="Ballistic Skill: Accuracy with ranged weapons (lower is better)">BS</th>
+                                    <th class="tooltip" data-tooltip="Strength: Physical power of the model in combat">S</th>
+                                    <th class="tooltip" data-tooltip="Toughness: Difficulty to wound the model">T</th>
+                                    <th class="tooltip" data-tooltip="Wounds: Amount of damage the model can sustain">W</th>
+                                    <th class="tooltip" data-tooltip="Initiative: Speed and combat reaction time">I</th>
+                                    <th class="tooltip" data-tooltip="Attacks: Number of close combat attacks">A</th>
+                                    <th class="tooltip" data-tooltip="Leadership: Bravery and morale of the model">Ld</th>
+                                    <th class="tooltip" data-tooltip="Save: Armor save value (lower is better)">Sv</th>
+                                    <th class="tooltip" data-tooltip="Invulnerable Save: Special save that cannot be modified (lower is better)">Inv</th>
+                                    <th>Actions</th>
                                 </tr>
-                                <template x-for="(points, value) in pointValueLookups[currentStat]" :key="value">
-                                    <tr>
-                                        <td x-text="value"></td>
+                            </thead>
+                            <tbody>
+                                <template x-for="(model, index) in models" :key="index">
+                                    <tr >
+                                        <td @click="selectedModel = model" :class="{'selected-model': selectedModel === model}">
+                                            <span style="display: inline-block; cursor: pointer;" x-text="getRelativePoints(model, index)"></span>
+                                            <span x-text="selectedModel === model ? '◀' : '▼'" class="breakdown-arrow"></span>
+                                        </td>
+                                        <td><input type="text" x-model="model.name" placeholder="Model name"></td>
                                         <td>
-                                            <input type="number" 
-                                                   x-model.number="pointValueLookups[currentStat][value]"
-                                                   class="point-input">
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.movement" min="1" max="12">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'movement')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'movement')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
-                                            <span x-text="(pointValueLookups[currentStat][value] * statMultipliers[currentStat]).toFixed(1)" style="font-size: 0.9em;"></span>
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.weaponSkill" min="1" max="10">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'weaponSkill')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'weaponSkill')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="text" x-model="model.ballisticSkill" @blur="ensurePlusSign(model, 'ballisticSkill')">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementSkill(model, 'ballisticSkill')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementSkill(model, 'ballisticSkill')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.strength" min="1" max="10">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'strength')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'strength')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.toughness" min="1" max="10">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'toughness')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'toughness')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.wounds" min="1" max="10">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'wounds')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'wounds')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.initiative" min="1" max="10">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'initiative')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'initiative')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.attacks" min="1" max="10">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'attacks')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'attacks')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="number" x-model.number="model.leadership" min="1" max="10">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementNumeric(model, 'leadership')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementNumeric(model, 'leadership')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="text" x-model="model.save" @blur="ensurePlusSign(model, 'save')">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementSkill(model, 'save')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementSkill(model, 'save')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="skill-input-wrapper">
+                                                <input type="text" x-model="model.invulnSave" @blur="ensurePlusSign(model, 'invulnSave')">
+                                                <div class="spinner-buttons">
+                                                    <button class="spinner-button" @click="incrementSkill(model, 'invulnSave')" title="Increase">▲</button>
+                                                    <button class="spinner-button" @click="decrementSkill(model, 'invulnSave')" title="Decrease">▼</button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <button class="delete-btn tooltip" @click="removeModel(index)" :disabled="models.length === 1" data-tooltip="Delete this model">X</button>
+                                            <button class="tooltip" @click="duplicateModel(index)" data-tooltip="Create a copy of this model">C</button>
                                         </td>
                                     </tr>
                                 </template>
-                            </table>
+                            </tbody>
+                        </table>
+                        <div class="import-export-container">
                         </div>
-
-                        <!-- Weight Matrix Editor -->
-                        <div class="weight-matrix-container" x-show="currentStat === 'weights'">
-                            <h4>Stat Weight Matrix</h4>
-                            <p class="matrix-info">This matrix defines how stats affect each other. Each row represents a source stat, and each column represents a target stat. The value at the intersection represents the influence of the source on the target.</p>
-                            
-                            <div class="weight-matrix-actions">
-                                <button @click="saveWeightMatrix" class="save-weights-btn">Save Weight Matrix</button>
-                                <button @click="resetWeightMatrix" class="reset-weights-btn">Reset to Default</button>
-                                <button @click="includeWeightMatrixInExport = !includeWeightMatrixInExport" 
-                                        class="toggle-weights-btn"
-                                        x-bind:class="{'active': includeWeightMatrixInExport}">
-                                    <span x-text="includeWeightMatrixInExport ? 'Included in Export' : 'Click to include in Export'"></span>
-                                </button>
+                        
+                        <div class="total-points hidden">
+                            Total Points: <span x-text="getTotalPoints()"></span>
+                        </div>
+                        
+                        <button @click="showPointConfig = !showPointConfig" class="config-btn">
+                            <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
+                            <span class="arrow-icon" :class="{'arrow-up': !showPointConfig}">▼</span>
+                        </button>
+                    </div>
+                    
+                    <div class="scrollable-content">
+                        <div x-show="showPointConfig" class="point-config-tables">
+                            <div class="point-config-header">
+                                <h3>Point Value Configuration</h3>
+                                <div class="point-config-actions">
+                                    <button @click="exportPointValues" class="export-btn">Export Configuration</button>
+                                    <label class="import-btn" for="importPointValues">Import Configuration</label>
+                                    <input type="file" id="importPointValues" @change="importPointValues($event)" accept=".json">
+                                </div>
                             </div>
-                            
-                            <div class="weight-matrix-scroll">
-                                <table class="weight-matrix-table">
-                                    <thead>
+
+                            <div class="stat-nav">
+                                <div class="stat-nav-label">Current Stat:</div>
+                                <div class="stat-buttons">
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'movement'"
+                                        x-bind:class="{'active': currentStat === 'movement'}">M</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'weaponSkill'"
+                                        x-bind:class="{'active': currentStat === 'weaponSkill'}">WS</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'ballisticSkill'"
+                                        x-bind:class="{'active': currentStat === 'ballisticSkill'}">BS</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'strength'"
+                                        x-bind:class="{'active': currentStat === 'strength'}">S</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'toughness'"
+                                        x-bind:class="{'active': currentStat === 'toughness'}">T</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'wounds'"
+                                        x-bind:class="{'active': currentStat === 'wounds'}">W</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'attacks'"
+                                        x-bind:class="{'active': currentStat === 'attacks'}">A</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'leadership'"
+                                        x-bind:class="{'active': currentStat === 'leadership'}">Ld</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'save'"
+                                        x-bind:class="{'active': currentStat === 'save'}">Sv</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'invulnSave'"
+                                        x-bind:class="{'active': currentStat === 'invulnSave'}">Inv</button>
+                                    <button 
+                                        class="stat-button" 
+                                        x-on:click="currentStat = 'weights'"
+                                        x-bind:class="{'active': currentStat === 'weights'}">Weights</button>
+                                </div>
+                            </div>
+
+                            <div class="single-stat-config" x-show="currentStat !== 'weights'">
+                                <h4>
+                                    <span x-text="formatStatName(currentStat)"></span>
+                                    <span> Multiplier: </span>
+                                    <input type="number"
+                                           x-model.number="statMultipliers[currentStat]"
+                                           min="0"
+                                           step="0.1"
+                                           class="weight-input"
+                                           @input="$nextTick(() => $forceUpdate())"
+                                           :style="{ backgroundColor: getMultiplierColor(statMultipliers[currentStat]) }">
+                                </h4>
+                                <table class="config-table">
+                                    <tr>
+                                        <th>Value</th>
+                                        <th>Points</th>
+                                        <th>Scaled</th>
+                                    </tr>
+                                    <template x-for="(points, value) in pointValueLookups[currentStat]" :key="value">
                                         <tr>
-                                            <th>Target→ Source↓</th>
-                                            <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
-                                                <th class="tooltip" :data-tooltip="'Base cost multiplier for ' + formatStatName(statName)">
-                                                    <div x-text="getStatShortName(statName)"></div>
-                                                    <input type="number"
-                                                           x-model.number="statMultipliers[statName]"
-                                                           min="0"
-                                                           step="0.1"
-                                                           class="weight-input"
-                                                           style="margin-top: 2px;"
-                                                           @input="$nextTick(() => $forceUpdate())"
-                                                           :style="{ backgroundColor: getMultiplierColor(statMultipliers[statName]) }">
-                                                </th>
-                                            </template>
+                                            <td x-text="value"></td>
+                                            <td>
+                                                <input type="number" 
+                                                       x-model.number="pointValueLookups[currentStat][value]"
+                                                       class="point-input">
+                                            </td>
+                                            <td>
+                                                <span x-text="(pointValueLookups[currentStat][value] * statMultipliers[currentStat]).toFixed(1)" style="font-size: 0.9em;"></span>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
-                                            <tr>
-                                                <td x-text="getStatShortName(sourceStat)" class="weight-source-stat tooltip" :data-tooltip="'This row controls how much ' + formatStatName(sourceStat) + ' adds to the cost of each stat'"></td>
-                                                <template x-for="(weight, i) in weights" :key="i">
-                                                    <td>
-                                                        <span class="tooltip" 
-                                                              :data-tooltip="'model\'s ' + formatStatName(sourceStat) + ' ' + (statWeightMatrix[sourceStat][i] > 0 ? 'increases' : statWeightMatrix[sourceStat][i] < 0 ? 'decreases' : 'has no effect on') + ' cost of ' + formatStatName(getStatAtIndex(i))">
-                                                            <input type="number" 
-                                                                   x-model.number="statWeightMatrix[sourceStat][i]" 
-                                                                   min="-2" 
-                                                                   max="2" 
-                                                                   step="0.1"
-                                                                   class="weight-input"
-                                                                   :class="{'active-weight': statWeightMatrix[sourceStat][i] > 0, 'negative-weight': statWeightMatrix[sourceStat][i] < 0}">
-                                                        </span>
-                                                    </td>
-                                                </template>
-                                            </tr>
-                                        </template>
-                                    </tbody>
+                                    </template>
                                 </table>
                             </div>
 
-                            <div class="weight-description">
-                                <h5>Current Dependencies:</h5>
-                                <ul class="dependency-list">
-                                    <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
-                                        <template x-for="(weight, i) in weights" :key="i">
-                                            <li x-show="weight != 0">
-                                                <span x-text="formatStatName(sourceStat)"></span> 
-                                                <span x-text="weight > 0 ? 'increases' : 'decreases'"></span> value of 
-                                                <span x-text="formatStatName(getStatAtIndex(i))"></span> 
-                                                with weight <span x-text="Math.abs(weight)"></span>
-                                            </li>
+                            <!-- Weight Matrix Editor -->
+                            <div class="weight-matrix-container" x-show="currentStat === 'weights'">
+                                <h4>Stat Weight Matrix</h4>
+                                <p class="matrix-info">This matrix defines how stats affect each other. Each row represents a source stat, and each column represents a target stat. The value at the intersection represents the influence of the source on the target.</p>
+                                
+                                <div class="weight-matrix-actions">
+                                    <button @click="saveWeightMatrix" class="save-weights-btn">Save Weight Matrix</button>
+                                    <button @click="resetWeightMatrix" class="reset-weights-btn">Reset to Default</button>
+                                    <button @click="includeWeightMatrixInExport = !includeWeightMatrixInExport" 
+                                            class="toggle-weights-btn"
+                                            x-bind:class="{'active': includeWeightMatrixInExport}">
+                                        <span x-text="includeWeightMatrixInExport ? 'Included in Export' : 'Click to include in Export'"></span>
+                                    </button>
+                                </div>
+                                
+                                <div class="weight-matrix-scroll">
+                                    <table class="weight-matrix-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Target→ Source↓</th>
+                                                <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
+                                                    <th class="tooltip" :data-tooltip="'Base cost multiplier for ' + formatStatName(statName)">
+                                                        <div x-text="getStatShortName(statName)"></div>
+                                                        <input type="number"
+                                                               x-model.number="statMultipliers[statName]"
+                                                               min="0"
+                                                               step="0.1"
+                                                               class="weight-input"
+                                                               style="margin-top: 2px;"
+                                                               @input="$nextTick(() => $forceUpdate())"
+                                                               :style="{ backgroundColor: getMultiplierColor(statMultipliers[statName]) }">
+                                                    </th>
+                                                </template>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
+                                                <tr>
+                                                    <td x-text="getStatShortName(sourceStat)" class="weight-source-stat tooltip" :data-tooltip="'This row controls how much ' + formatStatName(sourceStat) + ' adds to the cost of each stat'"></td>
+                                                    <template x-for="(weight, i) in weights" :key="i">
+                                                        <td>
+                                                            <span class="tooltip" 
+                                                                  :data-tooltip="'model\'s ' + formatStatName(sourceStat) + ' ' + (statWeightMatrix[sourceStat][i] > 0 ? 'increases' : statWeightMatrix[sourceStat][i] < 0 ? 'decreases' : 'has no effect on') + ' cost of ' + formatStatName(getStatAtIndex(i))">
+                                                                <input type="number" 
+                                                                       x-model.number="statWeightMatrix[sourceStat][i]" 
+                                                                       min="-2" 
+                                                                       max="2" 
+                                                                       step="0.1"
+                                                                       class="weight-input"
+                                                                       :class="{'active-weight': statWeightMatrix[sourceStat][i] > 0, 'negative-weight': statWeightMatrix[sourceStat][i] < 0}">
+                                                            </span>
+                                                        </td>
+                                                    </template>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="weight-description">
+                                    <h5>Current Dependencies:</h5>
+                                    <ul class="dependency-list">
+                                        <template x-for="(weights, sourceStat) in statWeightMatrix" :key="sourceStat">
+                                            <template x-for="(weight, i) in weights" :key="i">
+                                                <li x-show="weight != 0">
+                                                    <span x-text="formatStatName(sourceStat)"></span> 
+                                                    <span x-text="weight > 0 ? 'increases' : 'decreases'"></span> value of 
+                                                    <span x-text="formatStatName(getStatAtIndex(i))"></span> 
+                                                    with weight <span x-text="Math.abs(weight)"></span>
+                                                </li>
+                                            </template>
                                         </template>
-                                    </template>
-                                </ul>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="right-pane">
-            <h2>Scenario Simulator</h2>
-
-            <!-- Target Model Selection -->
-            <div x-show="selectedModel" class="scenario-input-group">
-                <label for="targetModelSelect">Select Target Model:</label>
-                <select id="targetModelSelect" x-model="scenarioConfig.meleeAttack.targetIndex" @change="console.log('Melee Target Index:', scenarioConfig.meleeAttack.targetIndex)">
-                    <option value="-1">-- Select Target --</option>
-                    <template x-for="(model, index) in models" :key="index">
-                        <option x-show="model !== selectedModel" :value="index" x-text="model.name || 'Unnamed Model'"></option>
+            <div class="right-pane">
+                <h2>Scenario Results</h2>
+                <div x-show="!selectedModel">
+                    <p>Select a model to see relevant scenario results.</p>
+                </div>
+                <div x-show="selectedModel">
+                    <!-- Loop through scenarios and display relevant results -->
+                    <template x-for="scenario in scenarios" :key="scenario.id">
+                        <!-- Check if the scenario involves the selectedModel as the attacker -->
+                        <div x-show="scenario.type === 'meleeAttack'" class="scenario-result-item">
+                            <h4>
+                                <span x-text="scenario.name || 'Unnamed Scenario'"></span>
+                                (<span x-text="scenario.type" style="font-style: italic; font-size: 0.9em;"></span>)
+                            </h4>
+                            <pre x-text="getScenarioResults(scenario, selectedModel)" style="white-space: pre-wrap; font-size: 0.9em; background-color: #f8f8f8; padding: 5px; border-radius: 3px;"></pre>
+                        </div>
+                        <!-- Add checks for other scenario types later (e.g., selectedModel as defender) -->
+                         <!-- 
+                        <div x-show="scenario.type === 'meleeDefense' && getModelById(scenario.attackingModelId)"> 
+                            ... display defense results ...
+                        </div>
+                        -->
                     </template>
-                </select>
-            </div>
-            <div x-show="!selectedModel">
-                <p>Select a model from the center pane first.</p>
-            </div>
-
-            <!-- Scenario Selection (Placeholder for now) -->
-            <div x-show="selectedModel && scenarioConfig.meleeAttack.targetIndex >= 0" class="scenario-type">
-                <p><strong>Scenario:</strong> Melee Attack</p> 
-            </div>
-
-            <!-- Results Display Area -->
-            <div x-show="selectedModel && scenarioConfig.meleeAttack.targetIndex >= 0" class="scenario-results">
-                <h3>Results:</h3>
-                <p x-text="calculateScenarioOutcome()" style="white-space: pre-wrap;"></p> 
-            </div>
-            <div x-show="selectedModel && scenarioConfig.meleeAttack.targetIndex == -1">
-                <p>Select a target model to simulate a scenario.</p>
+                    <div x-show="selectedModel && scenarios.filter(s => s.type === 'meleeAttack').length === 0">
+                        <p>No relevant attack scenarios defined for <span x-text="selectedModel.name || 'this model'"></span>.</p>
+                        <p><small>Go to the Scenario Editor tab to create some!</small></p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Add tooltip positioning script -->
+    <!-- Scenario Editor View -->
+    <div class="scenario-editor-view" x-show="currentView === 'scenarios'">
+        <h2>Scenario Editor</h2>
+        <div class="scenario-editor-layout">
+            <div class="scenario-list-pane">
+                <h3>Defined Scenarios</h3>
+                <!-- Scenario list -->
+                <ul>
+                    <li x-show="scenarios.length === 0">No scenarios defined yet.</li>
+                    <!-- Use x-for to display scenarios -->
+                    <template x-for="scenario in scenarios" :key="scenario.id">
+                        <li @click="selectedScenarioId = scenario.id"
+                            :class="{'selected-scenario': selectedScenarioId === scenario.id}">
+                            <span x-text="scenario.name || 'Unnamed Scenario'"></span> 
+                            (<span x-text="scenario.type || 'unknown type'" style="font-style: italic; font-size: 0.9em;"></span>)
+                        </li>
+                    </template>
+                </ul>
+                <!-- Scenario Action Buttons -->
+                <div class="scenario-actions">
+                    <button @click="addScenario()">Add New Scenario</button>
+                    <button @click="deleteScenario()" :disabled="!selectedScenarioId" class="delete-btn">Delete Selected</button>
+                    <button @click="exportScenarios()" class="export-btn">Export Scenarios</button>
+                    <label class="import-btn" for="importScenariosInput">Import Scenarios</label>
+                    <input type="file" id="importScenariosInput" accept=".json" @change="importScenarios($event)" style="display: none;">
+                 </div>
+            </div>
+            <div class="scenario-form-pane">
+                <h3>Edit Scenario</h3>
+                <div x-show="!selectedScenario">
+                    <p>Select a scenario from the list to edit, or add a new one.</p>
+                </div>
+                <div x-show="selectedScenario">
+                    <!-- Scenario Name -->
+                    <div class="form-group">
+                        <label for="scenarioName">Scenario Name:</label>
+                        <input type="text" id="scenarioName" x-model="selectedScenario.name" placeholder="Enter scenario name">
+                    </div>
+
+                    <!-- Scenario Type -->
+                    <div class="form-group">
+                        <label for="scenarioType">Scenario Type:</label>
+                        <select id="scenarioType" x-model="selectedScenario.type">
+                            <option value="meleeAttack">Melee Attack</option>
+                            <!-- Add other types later:
+                            <option value="rangedAttack">Ranged Attack</option>
+                            <option value="meleeDefense">Melee Defense</option>
+                            <option value="rangedDefense">Ranged Defense</option>
+                             -->
+                        </select>
+                    </div>
+
+                    <!-- Melee Attack Specific Fields -->
+                    <div x-show="selectedScenario.type === 'meleeAttack'" class="scenario-type-fields">
+                        <h4>Melee Attack Options</h4>
+                        <div class="form-group">
+                            <label for="targetModels">Target Models:</label>
+                            <select id="targetModels" x-model="selectedScenario.targetModelIds" multiple size="5" style="width: 100%;">
+                                <!-- Populate options dynamically -->
+                                <template x-for="model in models" :key="model.id">
+                                    <!-- Only show models that *could* be targets (optional: exclude self?) -->
+                                    <option :value="model.id" x-text="model.name || 'Unnamed Model'"></option>
+                                </template>
+                            </select>
+                            <small>Hold Ctrl/Cmd to select multiple targets.</small>
+                        </div>
+                    </div>
+
+                    <!-- Placeholder for Ranged Attack Fields -->
+                    <div x-show="selectedScenario.type === 'rangedAttack'" class="scenario-type-fields">
+                        <h4>Ranged Attack Options</h4>
+                        <p>(Weapon profile and target selection will go here)</p>
+                    </div>
+
+                    <!-- Placeholder for Defense Fields -->
+                    <div x-show="selectedScenario.type === 'meleeDefense' || selectedScenario.type === 'rangedDefense'" class="scenario-type-fields">
+                        <h4>Defense Options</h4>
+                        <p>(Attacking model/weapon selection will go here)</p>
+                    </div>
+
+                    <!-- Add a Save button later if needed, or rely on x-model auto-updating -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip positioning script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.body.addEventListener('mouseover', function(e) {
