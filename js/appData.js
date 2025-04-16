@@ -99,6 +99,7 @@ function appData() {
         nextArmoryItemId: 1,
         armoryItems: [], // Array to hold armory item objects
         selectedArmoryItemId: null, // ID of the item being edited
+        armorySearchTerm: '', // ++ Added for search filter ++
 
         // Point value lookup tables for each stat
         pointValueLookups: {
@@ -389,36 +390,107 @@ function appData() {
 
             // Initialize with a sample item if none are loaded/parsed
             if (this.armoryItems.length === 0) {
-                 this.armoryItems.push({
-                    id: this.nextArmoryItemId++,
-                    name: 'Chainsword',
-                    type: 'meleeWeapon', // Updated type
-                    description: 'Standard close combat weapon.',
-                    baseCost: 0,
-                    range: null,
-                    strength: null, // Or maybe 'User'/'Melee' notation later?
-                    ap: null,
-                    attacks: null, // Renamed field
-                    meleeStrength: '-', // Add default meleeStrength
-                    meleeAttacks: '+1', // Example: Chainsword gives +1 Attack
-                    weaponType: null, // Wargear/Melee don't have this type
-                    statWeights: Array(this.getStatOrder().length).fill(0) // Add default weights
-                });
-                this.armoryItems.push({
-                    id: this.nextArmoryItemId++,
-                    name: 'Lasgun',
-                    type: 'rangedWeapon', // Example ranged
-                    description: 'Standard Imperial ranged weapon.',
-                    baseCost: 0,
-                    range: 24,
-                    strength: 3,
-                    ap: 0, // Often represented as '-' or 0
-                    attacks: 1, // Add attacks field
-                    meleeStrength: '-', // Add field, default to '-' even for non-melee
-                    meleeAttacks: '-', // Add field, default to '-' even for non-melee
-                    weaponType: 'Rapid Fire', // Lasguns are typically Rapid Fire
-                    statWeights: Array(this.getStatOrder().length).fill(0) // Add default weights
-                });
+                 console.log('No saved armory items found, creating defaults.');
+                this.armoryItems = [
+                    // Ranged Weapons
+                    {
+                        id: this.nextArmoryItemId++, name: 'Bolter', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 24, strength: 4, ap: 5, attacks: 1, weaponType: 'Rapid Fire',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Lasgun', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 24, strength: 3, ap: 0, attacks: 1, weaponType: 'Rapid Fire',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Bolt Pistol', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 12, strength: 4, ap: 5, attacks: 1, weaponType: 'Pistol',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Lascannon', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 48, strength: 9, ap: 2, attacks: 1, weaponType: 'Heavy',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Plasma Gun', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 24, strength: 7, ap: 2, attacks: 1, weaponType: 'Rapid Fire', // Gets Hot! not modeled
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                     {
+                        id: this.nextArmoryItemId++, name: 'Plasma Cannon', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 36, strength: 7, ap: 2, attacks: 1, weaponType: 'Heavy', // Blast? Gets Hot! not modeled
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Plasma Pistol', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 12, strength: 7, ap: 2, attacks: 1, weaponType: 'Pistol', // Gets Hot! not modeled
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Autocannon', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 48, strength: 7, ap: 4, attacks: 2, weaponType: 'Heavy',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Missile Launcher (Krak)', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 48, strength: 8, ap: 3, attacks: 1, weaponType: 'Heavy',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                     {
+                        id: this.nextArmoryItemId++, name: 'Missile Launcher (Frag)', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 48, strength: 4, ap: 0, attacks: 1, weaponType: 'Heavy', // Blast?
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                     {
+                        id: this.nextArmoryItemId++, name: 'Meltagun', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 12, strength: 8, ap: 1, attacks: 1, weaponType: 'Assault', // Melta rule not modeled
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Storm Bolter', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 24, strength: 4, ap: 5, attacks: 2, weaponType: 'Assault',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Heavy Bolter', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 36, strength: 5, ap: 4, attacks: 3, weaponType: 'Heavy',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                     {
+                        id: this.nextArmoryItemId++, name: 'Shuriken Catapult', type: 'rangedWeapon', description: '', baseCost: 0,
+                        range: 12, strength: 4, ap: 5, attacks: 2, weaponType: 'Assault', // Bladestorm rule not modeled
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    // Melee Weapons
+                    {
+                        id: this.nextArmoryItemId++, name: 'Chainsword', type: 'meleeWeapon', description: '', baseCost: 0,
+                        range: null, strength: null, ap: 0, attacks: null, weaponType: null,
+                        meleeStrength: '-', meleeAttacks: '+1', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Power Weapon', type: 'meleeWeapon', description: '', baseCost: 0,
+                        range: null, strength: null, ap: 1, attacks: null, weaponType: null,
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Power Fist', type: 'meleeWeapon', description: '', baseCost: 0,
+                        range: null, strength: null, ap: 1, attacks: null, weaponType: null, // Initiative penalty not modeled
+                        meleeStrength: 'x2', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Choppa', type: 'meleeWeapon', description: '', baseCost: 0,
+                        range: null, strength: null, ap: 0, attacks: null, weaponType: null,
+                        meleeStrength: '+1', meleeAttacks: '+1', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    // Wargear
+                    {
+                        id: this.nextArmoryItemId++, name: 'Krak Grenades', type: 'wargear', description: 'Anti-tank grenade', baseCost: 0,
+                        range: 8, strength: 6, ap: 4, attacks: 1, weaponType: 'Grenade', // Treat as single-shot ranged? Or just info?
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                ];
                 this.saveArmoryItems();
             }
         },

@@ -685,9 +685,16 @@
         <div class="armory-layout">
             <div class="armory-list-pane">
                 <h3>Item List</h3>
+                <!-- ++ Search Input ++ -->
+                <div class="armory-search-bar">
+                    <input type="text" x-model="armorySearchTerm" placeholder="Search items..." class="search-input">
+                </div>
                 <ul>
-                    <li x-show="armoryItems.length === 0">No armory items defined yet.</li>
-                    <template x-for="item in armoryItems" :key="item.id">
+                    <li x-show="armoryItems.filter(item => item.name.toLowerCase().includes(armorySearchTerm.toLowerCase())).length === 0">
+                        No matching items found.
+                    </li>
+                    <!-- Updated x-for to filter based on armorySearchTerm -->
+                    <template x-for="item in armoryItems.filter(item => item.name.toLowerCase().includes(armorySearchTerm.toLowerCase()))" :key="item.id">
                         <li @click="selectedArmoryItemId = item.id"
                             :class="{'selected-armory-item': selectedArmoryItemId === item.id}">
                             <span x-text="item.name || 'Unnamed Item'"></span> 

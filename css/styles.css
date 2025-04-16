@@ -1284,3 +1284,20 @@ button:hover {
 
 .melee-stats-horizontal {
 }
+
+/* Add near other armory styles */
+.armory-search-bar {
+    margin-bottom: 10px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.armory-list-pane ul {
+    font-weight: bold;
+}
