@@ -17,6 +17,7 @@
         <div class="view-tabs-header">
             <button @click="currentView = 'models'" :class="{'active': currentView === 'models'}">Model Editor</button>
             <button @click="currentView = 'scenarios'" :class="{'active': currentView === 'scenarios'}">Scenario Editor</button>
+            <button @click="currentView = 'armory'" :class="{'active': currentView === 'armory'}">Armory Items</button>
         </div>
 
         <div class="header-buttons">
@@ -622,56 +623,283 @@
                 <div x-show="!selectedScenario">
                     <p>Select a scenario from the list to edit, or add a new one.</p>
                 </div>
-                <div x-show="selectedScenario">
-                    <!-- Scenario Name -->
-                    <div class="form-group">
-                        <label for="scenarioName">Scenario Name:</label>
-                        <input type="text" id="scenarioName" x-model="selectedScenario.name" placeholder="Enter scenario name">
-                    </div>
-
-                    <!-- Scenario Type -->
-                    <div class="form-group">
-                        <label for="scenarioType">Scenario Type:</label>
-                        <select id="scenarioType" x-model="selectedScenario.type">
-                            <option value="meleeAttack">Melee Attack</option>
-                            <!-- Add other types later:
-                            <option value="rangedAttack">Ranged Attack</option>
-                            <option value="meleeDefense">Melee Defense</option>
-                            <option value="rangedDefense">Ranged Defense</option>
-                             -->
-                        </select>
-                    </div>
-
-                    <!-- Melee Attack Specific Fields -->
-                    <div x-show="selectedScenario.type === 'meleeAttack'" class="scenario-type-fields">
-                        <h4>Melee Attack Options</h4>
+                <template x-if="selectedScenario">
+                    <div> <!-- Wrap content in a div or use template tag -->
+                        <!-- Scenario Name -->
                         <div class="form-group">
-                            <label for="targetModels">Target Models:</label>
-                            <select id="targetModels" x-model="selectedScenario.targetModelIds" multiple size="5" style="width: 100%;">
-                                <!-- Populate options dynamically -->
-                                <template x-for="model in models" :key="model.id">
-                                    <!-- Only show models that *could* be targets (optional: exclude self?) -->
-                                    <option :value="model.id" x-text="model.name || 'Unnamed Model'"></option>
-                                </template>
-                            </select>
-                            <small>Hold Ctrl/Cmd to select multiple targets.</small>
+                            <label for="scenarioName">Scenario Name:</label>
+                            <input type="text" id="scenarioName" x-model="selectedScenario.name" placeholder="Enter scenario name">
                         </div>
+
+                        <!-- Scenario Type -->
+                        <div class="form-group">
+                            <label for="scenarioType">Scenario Type:</label>
+                            <select id="scenarioType" x-model="selectedScenario.type">
+                                <option value="meleeAttack">Melee Attack</option>
+                                <!-- Add other types later:
+                                <option value="rangedAttack">Ranged Attack</option>
+                                <option value="meleeDefense">Melee Defense</option>
+                                <option value="rangedDefense">Ranged Defense</option>
+                                -->
+                            </select>
+                        </div>
+
+                        <!-- Melee Attack Specific Fields -->
+                        <div x-show="selectedScenario.type === 'meleeAttack'" class="scenario-type-fields">
+                            <h4>Melee Attack Options</h4>
+                            <div class="form-group">
+                                <label for="targetModels">Target Models:</label>
+                                <select id="targetModels" x-model="selectedScenario.targetModelIds" multiple size="5" style="width: 100%;">
+                                    <!-- Populate options dynamically -->
+                                    <template x-for="model in models" :key="model.id">
+                                        <!-- Only show models that *could* be targets (optional: exclude self?) -->
+                                        <option :value="model.id" x-text="model.name || 'Unnamed Model'"></option>
+                                    </template>
+                                </select>
+                                <small>Hold Ctrl/Cmd to select multiple targets.</small>
+                            </div>
+                        </div>
+
+                        <!-- Placeholder for Ranged Attack Fields -->
+                        <div x-show="selectedScenario.type === 'rangedAttack'" class="scenario-type-fields">
+                            <h4>Ranged Attack Options</h4>
+                            <p>(Weapon profile and target selection will go here)</p>
+                        </div>
+
+                        <!-- Placeholder for Defense Fields -->
+                        <div x-show="selectedScenario.type === 'meleeDefense' || selectedScenario.type === 'rangedDefense'" class="scenario-type-fields">
+                            <h4>Defense Options</h4>
+                            <p>(Attacking model/weapon selection will go here)</p>
+                        </div>
+
+                        <!-- Add a Save button later if needed, or rely on x-model auto-updating -->
                     </div>
+                </template>
+            </div>
+        </div>
+    </div>
 
-                    <!-- Placeholder for Ranged Attack Fields -->
-                    <div x-show="selectedScenario.type === 'rangedAttack'" class="scenario-type-fields">
-                        <h4>Ranged Attack Options</h4>
-                        <p>(Weapon profile and target selection will go here)</p>
-                    </div>
+    <!-- Armory Items View -->
+    <div class="armory-view" x-show="currentView === 'armory'" style="padding-top: 70px;">
+        <h2>Armory Items</h2>
+        <div class="armory-layout">
+            <div class="armory-list-pane">
+                <h3>Item List</h3>
+                <ul>
+                    <li x-show="armoryItems.length === 0">No armory items defined yet.</li>
+                    <template x-for="item in armoryItems" :key="item.id">
+                        <li @click="selectedArmoryItemId = item.id"
+                            :class="{'selected-armory-item': selectedArmoryItemId === item.id}">
+                            <span x-text="item.name || 'Unnamed Item'"></span> 
+                            (<span x-text="item.type || 'unknown'" style="font-style: italic; font-size: 0.9em;"></span>)
+                        </li>
+                    </template>
+                </ul>
+                <div class="armory-actions">
+                    <button @click="addArmoryItem()">Add New Item</button>
+                    <!-- Add export/import later if needed -->
+                </div>
+            </div>
+            <div class="armory-form-pane">
+                <h3>Edit Item Details</h3>
+                <div x-show="!selectedArmoryItemId">
+                    <p>Select an item from the list to edit, or add a new one.</p>
+                </div>
+                <div x-show="selectedArmoryItemId" x-data="{ currentItem: null }" 
+                     x-init="$watch('selectedArmoryItemId', id => { 
+                                console.log('Watcher triggered. Selected ID:', id, 'Type:', typeof id);
+                                let foundItem = armoryItems.find(item => item.id === id);
+                                console.log('Found item (before defaults):', foundItem);
+                                
+                                // Pre-fill defaults for ranged weapons if stats are null/undefined
+                                if (foundItem && foundItem.type === 'rangedWeapon') {
+                                    if (foundItem.range === null || foundItem.range === undefined) {
+                                        foundItem.range = 24;
+                                    }
+                                    if (foundItem.strength === null || foundItem.strength === undefined) {
+                                        foundItem.strength = 4;
+                                    }
+                                    if (foundItem.ap === null || foundItem.ap === undefined) {
+                                        foundItem.ap = 0;
+                                    }
+                                    if (foundItem.attacks === null || foundItem.attacks === undefined) {
+                                        foundItem.attacks = 1;
+                                    }
+                                    console.log('Item after ranged defaults:', foundItem);
+                                }
+                                
+                                currentItem = foundItem || null;
+                                console.log('currentItem set to:', currentItem);
+                             })">
+                    <template x-if="currentItem">
+                        <div> <!-- Wrapper div -->
+                            <div class="form-group">
+                                <label :for="'itemName-' + currentItem.id">Item Name:</label>
+                                <input type="text" :id="'itemName-' + currentItem.id" x-model="currentItem.name" placeholder="Enter item name" @change="saveArmoryItems()">
+                            </div>
+                            <div class="form-group">
+                                <label :for="'itemType-' + currentItem.id">Item Type:</label>
+                                <select :id="'itemType-' + currentItem.id" x-model="currentItem.type" @change="saveArmoryItems()">
+                                    <option value="wargear">Wargear</option>
+                                    <option value="specialRule">Special Rule</option>
+                                    <option value="rangedWeapon">Ranged Weapon</option>
+                                    <option value="meleeWeapon">Melee Weapon</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label :for="'itemDesc-' + currentItem.id">Description:</label>
+                                <textarea :id="'itemDesc-' + currentItem.id" x-model="currentItem.description" placeholder="Enter description" rows="1" @change="saveArmoryItems()"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label :for="'itemBaseCost-' + currentItem.id">Base Cost:</label>
+                                <input type="number" :id="'itemBaseCost-' + currentItem.id" x-model.number="currentItem.baseCost" placeholder="0" @change="saveArmoryItems()">
+                            </div>
 
-                    <!-- Placeholder for Defense Fields -->
-                    <div x-show="selectedScenario.type === 'meleeDefense' || selectedScenario.type === 'rangedDefense'" class="scenario-type-fields">
-                        <h4>Defense Options</h4>
-                        <p>(Attacking model/weapon selection will go here)</p>
-                    </div>
+                            <!-- ++ Ranged Weapon Stats (Conditional) ++ -->
+                            <div x-show="currentItem.type === 'rangedWeapon'" class="weapon-stats-group">
+                                <h4>Ranged Weapon Stats</h4>
+                                <table class="armory-ranged-stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Range</th>
+                                            <th>S</th>
+                                            <th>AP</th>
+                                            <th>A</th>
+                                            <th>Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="number" x-model.number="currentItem.range" placeholder="e.g., 24" @change="saveArmoryItems()">
+                                            </td>
+                                            <td>
+                                                <div class="skill-input-wrapper">
+                                                    <input type="number" x-model.number="currentItem.strength" placeholder="e.g., 4" @change="saveArmoryItems()">
+                                                    <div class="spinner-buttons">
+                                                        <button class="spinner-button" @click="incrementArmoryStat(currentItem, 'strength')" title="Increase">▲</button>
+                                                        <button class="spinner-button" @click="decrementArmoryStat(currentItem, 'strength')" title="Decrease">▼</button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="skill-input-wrapper">
+                                                    <input type="text" 
+                                                        :value="(currentItem.ap == 0 && currentItem.ap !== null && currentItem.ap !== undefined) ? '-' : currentItem.ap" 
+                                                        @input="currentItem.ap = ($event.target.value === '-' ? 0 : $event.target.value); saveArmoryItems()" 
+                                                        placeholder="e.g., 0 or -" >
+                                                    <div class="spinner-buttons">
+                                                        <button class="spinner-button" @click="incrementArmoryAP(currentItem)" title="Increase AP (Worse)">▲</button>
+                                                        <button class="spinner-button" @click="decrementArmoryAP(currentItem)" title="Decrease AP (Better)">▼</button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="number" x-model.number="currentItem.attacks" placeholder="e.g., 1" @change="saveArmoryItems()">
+                                            </td>
+                                            <td>
+                                                <select x-model="currentItem.weaponType" @change="saveArmoryItems()">
+                                                    <option value="Heavy">Heavy</option>
+                                                    <option value="Rapid Fire">Rapid Fire</option>
+                                                    <option value="Assault">Assault</option>
+                                                    <option value="Pistol">Pistol</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                    <!-- Add a Save button later if needed, or rely on x-model auto-updating -->
+                            <!-- ++ Melee Weapon Stats (Conditional) ++ -->
+                            <div x-show="currentItem.type === 'meleeWeapon'" class="weapon-stats-group">
+                                <h4>Melee Weapon Stats</h4>
+                                <div class="melee-stats-horizontal">
+                                    <div class="form-group">
+                                        <label :for="'itemMeleeStrength-' + currentItem.id">Str:</label>
+                                        <select :id="'itemMeleeStrength-' + currentItem.id" x-model="currentItem.meleeStrength" @change="saveArmoryItems()">
+                                            <option value="-1">-1</option>
+                                            <option value="-">user</option> <!-- Default -->
+                                            <option value="+1">+1</option>
+                                            <option value="+2">+2</option>
+                                            <option value="+3">+3</option>
+                                            <option value="x2">x2</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label :for="'itemAp-' + currentItem.id">AP:</label>
+                                        <div class="skill-input-wrapper">
+                                            <input type="text" 
+                                                :id="'itemAp-' + currentItem.id" 
+                                                :value="(currentItem.ap == 0 && currentItem.ap !== null && currentItem.ap !== undefined) ? '-' : currentItem.ap" 
+                                                @input="currentItem.ap = ($event.target.value === '-' ? 0 : $event.target.value); saveArmoryItems()" 
+                                                placeholder="-" >
+                                            <div class="spinner-buttons">
+                                                <button class="spinner-button" @click="incrementArmoryAP(currentItem)" title="Increase AP (Worse)">▲</button>
+                                                <button class="spinner-button" @click="decrementArmoryAP(currentItem)" title="Decrease AP (Better)">▼</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label :for="'itemMeleeAttacks-' + currentItem.id">Melee Attacks:</label>
+                                        <select :id="'itemMeleeAttacks-' + currentItem.id" x-model="currentItem.meleeAttacks" @change="saveArmoryItems()">
+                                            <option value="-1">-1</option>
+                                            <option value="-">user</option>
+                                            <option value="+1">+1</option>
+                                            <option value="+2">+2</option>
+                                            <option value="+3">+3</option>
+                                            <option value="x2">x2</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <!-- ++ Stat Weights Modifier Table ++ -->
+                            <div class="item-weights-group"> <!-- New wrapper group -->
+                                <h4>Stat Cost Modifiers (Item Cost)</h4>
+                                <p class="item-weights-info">Define how the wielder's stats affect the item's point cost.</p>
+                                <div class="armory-item-weights-scroll"> <!-- Scroll wrapper if needed -->
+                                    <table class="armory-item-weights-table">
+                                        <thead>
+                                            <tr>
+                                                <!-- Generate headers using statMultipliers keys and getStatShortName -->
+                                                <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
+                                                     <th x-text="getStatShortName(statName)" class="tooltip" :data-tooltip="formatStatName(statName)"></th>
+                                                </template>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                 <!-- Generate input cells bound to currentItem.statWeights[index] -->
+                                                <template x-for="(statName, index) in Object.keys(statMultipliers)" :key="statName">
+                                                    <td>
+                                                        <div class="skill-input-wrapper">
+                                                            <input type="number"
+                                                                   x-model.number="currentItem.statWeights[index]"
+                                                                   step="0.1"
+                                                                   class="item-weight-input"
+                                                                   @change="saveArmoryItems()"
+                                                                   :style="{ backgroundColor: getMultiplierColor(mapWeightToColorValue(currentItem.statWeights[index])) }"
+                                                                   :class="{'active-weight': currentItem.statWeights[index] > 0, 'negative-weight': currentItem.statWeights[index] < 0}">
+                                                            <div class="spinner-buttons">
+                                                                <button class="spinner-button" @click="incrementArmoryWeight(currentItem, index)" title="Increase">▲</button>
+                                                                <button class="spinner-button" @click="decrementArmoryWeight(currentItem, index)" title="Decrease">▼</button>
+                                                            </div>
+                                                        </div>
+                                                   </td>
+                                                </template>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="armory-item-actions">
+                                <button @click="duplicateArmoryItem(currentItem.id)" class="duplicate-btn">Duplicate</button>
+                                <button @click="removeArmoryItem(currentItem.id)" class="delete-btn">Delete Item</button>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>

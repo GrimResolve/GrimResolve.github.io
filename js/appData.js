@@ -1,5 +1,6 @@
 function appData() {
     return {
+        getStatOrder: () => ['movement', 'weaponSkill', 'ballisticSkill', 'strength', 'toughness', 'wounds', 'initiative', 'attacks', 'leadership', 'save', 'invulnSave'],
         nextModelId: 6, // Start counting from the next available ID
         models: [
             {
@@ -92,7 +93,12 @@ function appData() {
         selectedScenarioId: null, // ID of the scenario currently being edited
 
         // ++ Added View Control ++
-        currentView: 'models', // 'models' or 'scenarios'
+        currentView: 'models', // 'models', 'scenarios', or 'armory'
+
+        // ++ Armory Items Data ++
+        nextArmoryItemId: 1,
+        armoryItems: [], // Array to hold armory item objects
+        selectedArmoryItemId: null, // ID of the item being edited
 
         // Point value lookup tables for each stat
         pointValueLookups: {
@@ -330,6 +336,90 @@ function appData() {
                 };
                 this.scenarios.push(defaultScenario);
                 this.saveScenarios(); // Save the newly created default scenario
+            }
+
+            // Load Armory Items
+            const savedArmoryItems = localStorage.getItem('grimResolverArmoryItems');
+            if (savedArmoryItems) {
+                try {
+                    this.armoryItems = JSON.parse(savedArmoryItems);
+                    // Ensure all items have the new fields (add with default null if missing)
+                    this.armoryItems.forEach(item => {
+                        if (item.range === undefined) item.range = null;
+                        if (item.strength === undefined) item.strength = null;
+                        if (item.ap === undefined) item.ap = null;
+                        if (item.attacks === undefined) {
+                            item.attacks = item.additionalAttacks !== undefined ? item.additionalAttacks : null;
+                            delete item.additionalAttacks;
+                        }
+                        if (item.meleeStrength === undefined) {
+                            item.meleeStrength = '-';
+                        }
+                        if (item.meleeAttacks === undefined) {
+                            item.meleeAttacks = '-';
+                        }
+                        if (item.weaponType === undefined) {
+                            item.weaponType = item.type === 'rangedWeapon' ? 'Assault' : null;
+                        }
+                        if (item.statWeights === undefined || !Array.isArray(item.statWeights) || item.statWeights.length !== this.getStatOrder().length) {
+                            item.statWeights = Array(this.getStatOrder().length).fill(0);
+                        }
+                        // Ensure baseCost exists, migrate from points if necessary
+                        if (item.baseCost === undefined) {
+                            item.baseCost = item.points !== undefined ? item.points : 0;
+                            delete item.points; // Remove old property
+                        }
+                        // Validate type or set a default if invalid/missing
+                        const validTypes = ['wargear', 'specialRule', 'rangedWeapon', 'meleeWeapon'];
+                        if (!validTypes.includes(item.type)) {
+                            item.type = 'wargear'; // Default to wargear if type is old/invalid
+                        }
+                    });
+
+                    if (this.armoryItems.length > 0) {
+                        this.nextArmoryItemId = Math.max(...this.armoryItems.map(item => item.id)) + 1;
+                    }
+                    console.log('Armory items loaded successfully.');
+                } catch (e) {
+                    console.error('Error parsing saved armory items:', e);
+                    this.armoryItems = []; // Reset to empty if parsing fails
+                    this.nextArmoryItemId = 1;
+                }
+            }
+
+            // Initialize with a sample item if none are loaded/parsed
+            if (this.armoryItems.length === 0) {
+                 this.armoryItems.push({
+                    id: this.nextArmoryItemId++,
+                    name: 'Chainsword',
+                    type: 'meleeWeapon', // Updated type
+                    description: 'Standard close combat weapon.',
+                    baseCost: 0,
+                    range: null,
+                    strength: null, // Or maybe 'User'/'Melee' notation later?
+                    ap: null,
+                    attacks: null, // Renamed field
+                    meleeStrength: '-', // Add default meleeStrength
+                    meleeAttacks: '+1', // Example: Chainsword gives +1 Attack
+                    weaponType: null, // Wargear/Melee don't have this type
+                    statWeights: Array(this.getStatOrder().length).fill(0) // Add default weights
+                });
+                this.armoryItems.push({
+                    id: this.nextArmoryItemId++,
+                    name: 'Lasgun',
+                    type: 'rangedWeapon', // Example ranged
+                    description: 'Standard Imperial ranged weapon.',
+                    baseCost: 0,
+                    range: 24,
+                    strength: 3,
+                    ap: 0, // Often represented as '-' or 0
+                    attacks: 1, // Add attacks field
+                    meleeStrength: '-', // Add field, default to '-' even for non-melee
+                    meleeAttacks: '-', // Add field, default to '-' even for non-melee
+                    weaponType: 'Rapid Fire', // Lasguns are typically Rapid Fire
+                    statWeights: Array(this.getStatOrder().length).fill(0) // Add default weights
+                });
+                this.saveArmoryItems();
             }
         },
         
@@ -1169,10 +1259,194 @@ function appData() {
             }
             // Combine results for all targets
             return results.join('\n\n'); // Add extra newline between target results
-        }
+        },
         // Add calculateRangedAttackOutcome, etc. here later
 
         // --- End Scenario Calculation Logic ---
+
+        // --- Armory Item Management --- 
+        addArmoryItem() {
+            const newItem = {
+                id: this.nextArmoryItemId++,
+                name: 'New Item',
+                type: 'wargear', // Default to wargear
+                description: '',
+                baseCost: 0, // Renamed from points
+                // Add new stat fields with default null/0 values
+                range: null,
+                strength: null,
+                ap: null,
+                attacks: null, // Renamed field
+                meleeStrength: '-', // Add new field with default '-'
+                meleeAttacks: '-', // Add new field with default '-'
+                weaponType: 'Assault', // Default new items to Assault for now
+                statWeights: Array(this.getStatOrder().length).fill(0) // Use this.
+            };
+            this.armoryItems.push(newItem);
+            this.selectedArmoryItemId = newItem.id; // Select the new item for editing
+            this.saveArmoryItems();
+        },
+
+        removeArmoryItem(itemId) {
+            if (confirm('Are you sure you want to delete this armory item?')) {
+                const index = this.armoryItems.findIndex(item => item.id === itemId);
+                if (index > -1) {
+                    this.armoryItems.splice(index, 1);
+                    if (this.selectedArmoryItemId === itemId) {
+                        this.selectedArmoryItemId = null; // Deselect if it was the one removed
+                    }
+                    this.saveArmoryItems();
+                } else {
+                    console.error("Armory item to delete not found:", itemId);
+                }
+            }
+        },
+
+        duplicateArmoryItem(itemId) {
+            const itemToDuplicate = this.armoryItems.find(item => item.id === itemId);
+            if (itemToDuplicate) {
+                const newItem = {
+                    ...itemToDuplicate, // Copy existing properties
+                    id: this.nextArmoryItemId++, // Assign a new unique ID
+                    name: itemToDuplicate.name + ' (Copy)' // Modify name slightly
+                };
+                const originalIndex = this.armoryItems.findIndex(item => item.id === itemId);
+                this.armoryItems.splice(originalIndex + 1, 0, newItem); // Insert after original
+                this.selectedArmoryItemId = newItem.id; // Select the new item
+                this.saveArmoryItems();
+            } else {
+                console.error("Armory item to duplicate not found:", itemId);
+            }
+        },
+
+        incrementArmoryStat(item, statName) {
+            const maxVal = 10; // Assuming max S is 10 for weapons too? Adjust if needed.
+            if (item && typeof item[statName] === 'number' && item[statName] < maxVal) {
+                item[statName]++;
+                this.saveArmoryItems(); // Save after incrementing
+            } else if (item && (item[statName] === null || item[statName] === undefined)) {
+                 // Handle case where it might be null, start from 1
+                 item[statName] = 1;
+                 this.saveArmoryItems();
+            }
+        },
+
+        decrementArmoryStat(item, statName) {
+             const minVal = 1; // Assuming min S is 1
+             if (item && typeof item[statName] === 'number' && item[statName] > minVal) {
+                 item[statName]--;
+                 this.saveArmoryItems(); // Save after decrementing
+             }
+        },
+
+        incrementArmoryAP(item) { // ▲ makes AP worse (higher number)
+            if (item) {
+                let currentVal = parseInt(item.ap, 10); // Ensure we have a number, 0 if '-' or invalid
+                if (isNaN(currentVal)) currentVal = 0;
+
+                if (currentVal === 0) { // Was '-'
+                    item.ap = 6;
+                } else if (currentVal >= 1 && currentVal < 6) {
+                    item.ap = currentVal + 1;
+                }
+                // If currentVal is 6, do nothing (cannot get worse)
+                this.saveArmoryItems();
+            }
+        },
+
+        decrementArmoryAP(item) { // ▼ makes AP better (lower number) OR wraps from '-' to 6
+             if (item) {
+                let currentVal = parseInt(item.ap, 10);
+                if (isNaN(currentVal)) currentVal = 0;
+
+                if (currentVal === 0) { // Was '-'
+                    item.ap = 6; // Wrap around to 6
+                } else if (currentVal === 1) {
+                    item.ap = 0; // Becomes '-'
+                } else if (currentVal > 1 && currentVal <= 6) {
+                    item.ap = currentVal - 1;
+                }
+                // No 'do nothing' case needed now
+                this.saveArmoryItems();
+             }
+        },
+
+        // Map weight value (e.g., -2 to 2) to color range (0 to 2)
+        mapWeightToColorValue(weight) {
+            const minWeight = -2;
+            const maxWeight = 2;
+            // Clamp weight within bounds
+            const clampedWeight = Math.max(minWeight, Math.min(maxWeight, weight || 0));
+            // Map to 0-2 range
+            // Formula: ((value - min) / (max - min)) * newMax
+            return ((clampedWeight - minWeight) / (maxWeight - minWeight)) * 2;
+        },
+
+        incrementArmoryWeight(item, index) {
+            const maxVal = 2.0; // Max weight
+            const step = 0.1;
+             // Initialize if null/undefined
+            if (item.statWeights[index] === null || item.statWeights[index] === undefined) {
+                item.statWeights[index] = 0;
+            }
+            if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] < maxVal) {
+                // Use toFixed to handle potential floating point inaccuracies
+                item.statWeights[index] = parseFloat((item.statWeights[index] + step).toFixed(1));
+                this.saveArmoryItems();
+            } else if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] >= maxVal){
+                 item.statWeights[index] = maxVal; // Clamp to max
+                 this.saveArmoryItems();
+            }
+        },
+
+        decrementArmoryWeight(item, index) {
+             const minVal = -2.0; // Min weight
+             const step = 0.1;
+              // Initialize if null/undefined
+            if (item.statWeights[index] === null || item.statWeights[index] === undefined) {
+                item.statWeights[index] = 0;
+            }
+             if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] > minVal) {
+                 item.statWeights[index] = parseFloat((item.statWeights[index] - step).toFixed(1));
+                 this.saveArmoryItems();
+             } else if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] <= minVal){
+                 item.statWeights[index] = minVal; // Clamp to min
+                 this.saveArmoryItems();
+             }
+        },
+
+        // Helper function to save armory items to localStorage
+        saveArmoryItems() {
+             // Ensure all items have the new fields before saving
+            this.armoryItems.forEach(item => {
+                if (item.range === undefined) item.range = null;
+                if (item.strength === undefined) item.strength = null;
+                if (item.ap === undefined) item.ap = null;
+                if (item.attacks === undefined) {
+                    item.attacks = item.additionalAttacks !== undefined ? item.additionalAttacks : null;
+                    delete item.additionalAttacks;
+                }
+                if (item.meleeStrength === undefined) {
+                    item.meleeStrength = '-';
+                }
+                if (item.meleeAttacks === undefined) {
+                    item.meleeAttacks = '-';
+                }
+                if (item.weaponType === undefined) {
+                    item.weaponType = item.type === 'rangedWeapon' ? 'Assault' : null;
+                }
+                if (item.statWeights === undefined || !Array.isArray(item.statWeights) || item.statWeights.length !== this.getStatOrder().length) {
+                    item.statWeights = Array(this.getStatOrder().length).fill(0);
+                }
+                if (item.baseCost === undefined) {
+                    item.baseCost = item.points !== undefined ? item.points : 0;
+                    delete item.points;
+                }
+            });
+            localStorage.setItem('grimResolverArmoryItems', JSON.stringify(this.armoryItems));
+            console.log('Armory items saved.');
+        }
+        // --- End Armory Item Management ---
 
     };
 } 

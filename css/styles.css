@@ -1001,3 +1001,286 @@ button:hover {
     padding-bottom: 10px;
     margin-bottom: 10px;
 } 
+
+/* Armory View Layout */
+.armory-layout {
+    display: flex;
+    gap: 20px; /* Space between panes */
+    padding: 15px; /* Padding around the whole layout */
+}
+
+.armory-list-pane {
+    flex: 1; /* Takes up 1 part of the space */
+    min-width: 250px; /* Minimum width for the list */
+    max-width: 400px; /* Maximum width */
+    background-color: #f9f9f9; /* Light background for distinction */
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.armory-list-pane h3,
+.armory-form-pane h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.armory-list-pane ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+    max-height: 400px; /* Limit height and allow scroll if needed */
+    overflow-y: auto;
+}
+
+.armory-list-pane li {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.armory-list-pane li:last-child {
+    border-bottom: none;
+}
+
+.armory-list-pane li:hover {
+    background-color: #e9e9e9;
+}
+
+.armory-list-pane .selected-armory-item {
+    background-color: #d4eaff; /* Light blue for selected item */
+    font-weight: bold;
+}
+
+.armory-actions button {
+    margin-right: 5px;
+}
+
+.armory-form-pane {
+    flex: 2; /* Takes up 2 parts of the space, making it wider */
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.armory-form-pane .form-group {
+    margin-bottom: 15px;
+}
+
+.armory-form-pane label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.armory-form-pane input[type="text"],
+.armory-form-pane input[type="number"],
+.armory-form-pane select,
+.armory-form-pane textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding and border in element's total width/height */
+    background-color: #ffffff; /* Added white background */
+}
+
+.armory-form-pane textarea {
+    resize: vertical; /* Allow vertical resize */
+}
+
+.armory-item-actions {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+}
+
+.armory-item-actions button {
+    margin-left: 10px;
+}
+
+/* Add near other armory styles */
+.weapon-stats-group {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+.weapon-stats-group h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #555;
+    font-size: 0.95em;
+}
+
+/* Armory Ranged Weapon Stats Table */
+.armory-ranged-stats-table {
+    /* width: 100%; */ /* Removed */
+    width: auto; /* Explicitly set width based on content */
+    margin: 0 0;
+    border-collapse: collapse;
+    margin-top: 10px;
+    table-layout: fixed; 
+}
+
+.armory-form-pane .armory-ranged-stats-table th, /* Increased specificity */
+.armory-form-pane .armory-ranged-stats-table td { /* Increased specificity */
+    border: 1px solid #ddd;
+    padding: 6px; 
+    text-align: center;
+    width: 60px; /* Added fixed width */
+}
+
+.armory-form-pane .armory-ranged-stats-table th { /* Increased specificity */
+    background-color: #e8e8e8; 
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.armory-form-pane .armory-ranged-stats-table td { /* Increased specificity */
+     background-color: #ffffff; 
+}
+
+.armory-form-pane .armory-ranged-stats-table input[type="text"], /* Increased specificity */
+.armory-form-pane .armory-ranged-stats-table input[type="number"] { /* Increased specificity */
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+/* Styles for spinner inside the armory table */
+.armory-ranged-stats-table td .skill-input-wrapper {
+     align-items: center;
+}
+
+.armory-ranged-stats-table td:has(.skill-input-wrapper) {
+    padding: 2px; /* Reduce padding on the cell itself */
+}
+
+/* Add near other armory styles */
+.melee-stats-horizontal {
+    display: flex;
+    gap: 15px; /* Adjust gap as needed */
+    align-items: flex-start; /* Align items to the top */
+}
+
+.melee-stats-horizontal .form-group {
+    width: 80px; /* Fixed width for each stat group */
+    margin-bottom: 0; /* Remove bottom margin as they are side-by-side */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Ensure labels don't take up too much space */
+.melee-stats-horizontal label {
+     white-space: nowrap; /* Prevent label text wrapping */
+}
+
+/* Override width for the 5th column (Type) */
+.armory-form-pane .armory-ranged-stats-table th:nth-child(5),
+.armory-form-pane .armory-ranged-stats-table td:nth-child(5) {
+    width: 100px; 
+}
+
+/* Adjust select width within that specific cell */
+.armory-form-pane .armory-ranged-stats-table td:nth-child(5) select {
+    width: 100%; 
+    box-sizing: border-box; 
+}
+
+.armory-form-pane .armory-ranged-stats-table th { /* Increased specificity */
+}
+
+/* Add near other armory styles */
+
+.item-weights-group {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+.item-weights-group h4 {
+     margin-top: 0;
+    margin-bottom: 5px; /* Reduced margin */
+    color: #555;
+    font-size: 0.95em;
+}
+
+.item-weights-info {
+    margin-bottom: 10px;
+    font-size: 0.85em;
+    color: #666;
+}
+
+.armory-item-weights-scroll {
+     overflow-x: auto; /* Add horizontal scroll if needed */
+}
+
+.armory-item-weights-table {
+    width: 100%; /* Make table take full width of container */
+    min-width: 500px; /* Minimum width before scrollbar appears */
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.armory-item-weights-table th,
+.armory-item-weights-table td {
+    border: 1px solid #ddd;
+    padding: 4px; /* Smaller padding */
+    text-align: center;
+    width: 50px; /* Set fixed width */
+}
+
+.armory-item-weights-table th {
+    background-color: #e8e8e8; /* Lighter grey header */
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.item-weight-input {
+    width: 100%;
+    padding: 4px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    -moz-appearance: textfield; /* Hide spinners in Firefox */
+}
+.item-weight-input::-webkit-inner-spin-button,
+.item-weight-input::-webkit-outer-spin-button {
+    -webkit-appearance: none; /* Hide spinners in Chrome/Safari/Edge */
+    margin: 0;
+}
+
+/* Use existing active/negative weight classes if desired */
+.item-weight-input.active-weight {
+    background-color: #e6f4e6; /* Lighter green */
+    color: #1d4d1d;
+}
+
+.item-weight-input.negative-weight {
+     background-color: #f4e6e6; /* Lighter red */
+     color: #602020;
+}
+
+/* Adjust padding for cells with spinners */
+.armory-item-weights-table td:has(.skill-input-wrapper) {
+    padding: 2px; 
+}
+
+/* Ensure input takes available space within wrapper */
+.armory-item-weights-table .skill-input-wrapper .item-weight-input {
+    flex-grow: 1;
+}
+
+.melee-stats-horizontal {
+}
