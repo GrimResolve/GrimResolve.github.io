@@ -550,59 +550,34 @@
         </div>
 
         <div class="right-pane">
-            <h2 class="hidden">Right Pane</h2>
-            <p class="hidden">Content will go here.</p>
-            <div class="point-formula-container hidden">
-                <div class="point-formula-title">Point Value Tables</div>
-                
-                <div class="stat-selector">
-                    <label for="stat-select">Select Stat:</label>
-                    <select id="stat-select" x-model="currentStat" class="stat-select">
-                        <option value="movement">Movement</option>
-                        <option value="weaponSkill">Weapon Skill</option>
-                        <option value="ballisticSkill">Ballistic Skill</option>
-                        <option value="strength">Strength</option>
-                        <option value="toughness">Toughness</option>
-                        <option value="wounds">Wounds</option>
-                        <option value="attacks">Attacks</option>
-                        <option value="leadership">Leadership</option>
-                        <option value="save">Save</option>
-                        <option value="invulnSave">Invuln Save</option>
-                        <option value="base">Base Cost</option>
-                    </select>
-                </div>
-                
-                <table class="point-formula-table">
-                    <thead>
-                        <tr>
-                            <th>Stat</th>
-                            <th>Values and Points</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Current Stat View -->
-                        <template x-if="currentStat !== 'base'">
-                            <tr>
-                                <td x-text="formatStatName(currentStat)"></td>
-                                <td>
-                                    <template x-for="(points, value) in pointValueLookups[currentStat]" :key="value">
-                                        <div class="point-value-row">
-                                            <span x-text="`${value}: ${points >= 0 ? '+' : ''}${points}`"></span>
-                                        </div>
-                                    </template>
-                                </td>
-                            </tr>
-                        </template>
-                        
-                        <!-- Base Cost -->
-                        <template x-if="currentStat === 'base'">
-                            <tr>
-                                <td>Base Cost</td>
-                                <td>10</td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
+            <h2>Scenario Simulator</h2>
+
+            <!-- Target Model Selection -->
+            <div x-show="selectedModel" class="scenario-input-group">
+                <label for="targetModelSelect">Select Target Model:</label>
+                <select id="targetModelSelect" x-model="scenarioConfig.meleeAttack.targetIndex" @change="console.log('Melee Target Index:', scenarioConfig.meleeAttack.targetIndex)">
+                    <option value="-1">-- Select Target --</option>
+                    <template x-for="(model, index) in models" :key="index">
+                        <option x-show="model !== selectedModel" :value="index" x-text="model.name || 'Unnamed Model'"></option>
+                    </template>
+                </select>
+            </div>
+            <div x-show="!selectedModel">
+                <p>Select a model from the center pane first.</p>
+            </div>
+
+            <!-- Scenario Selection (Placeholder for now) -->
+            <div x-show="selectedModel && scenarioConfig.meleeAttack.targetIndex >= 0" class="scenario-type">
+                <p><strong>Scenario:</strong> Melee Attack</p> 
+            </div>
+
+            <!-- Results Display Area -->
+            <div x-show="selectedModel && scenarioConfig.meleeAttack.targetIndex >= 0" class="scenario-results">
+                <h3>Results:</h3>
+                <p x-text="calculateScenarioOutcome()" style="white-space: pre-wrap;"></p> 
+            </div>
+            <div x-show="selectedModel && scenarioConfig.meleeAttack.targetIndex == -1">
+                <p>Select a target model to simulate a scenario.</p>
             </div>
         </div>
     </div>

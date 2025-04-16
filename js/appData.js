@@ -76,6 +76,13 @@ function appData() {
         showPointConfig: true,
         currentStat: 'weights',
         
+        // Scenario Simulation Data
+        scenarioConfig: {
+            meleeAttack: { targetIndex: -1 }
+            // Add other scenarios like 'rangedAttack', 'meleeDefense', 'rangedDefense' here later
+        },
+        // currentScenarioType: 'meleeAttack', // Add this later when switching scenarios is needed
+
         // Point value lookup tables for each stat
         pointValueLookups: {
             movement: {
@@ -797,23 +804,12 @@ function appData() {
 
         // Reset the weight matrix to default values
         resetWeightMatrix() {
-            if (confirm('Are you sure you want to reset the weight matrix to default values?')) {
-                this.statWeightMatrix = {
-                    // Effect of row stat on column stat
-                    //           M    WS   BS   S    T    W    I    A    Ld   Sv   Inv
-                    movement:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
-                    weaponSkill:[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
-                    ballisticSkill:[0,0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-                    strength:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Strength is a terminal node
-                    toughness:  [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
-                    wounds:     [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Wounds is a terminal node
-                    initiative: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Initiative affects Attacks
-                    attacks:    [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Attacks affects Strength
-                    leadership: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Leadership is a terminal node
-                    save:       [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Save affects Wounds
-                    invulnSave: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0]    // Invuln Save affects Wounds
-                };
-            }
+            // Implement logic to reset matrix to default values
+            console.log('Resetting matrix...');
+            this.statWeightMatrix = this.getInitialWeightMatrix(); // Assuming getInitialWeightMatrix exists
+            this.statMultipliers = this.getInitialMultipliers(); // Assuming getInitialMultipliers exists
+            this.saveWeightMatrix(); // Optionally save immediately
+            this.$forceUpdate(); // Force Alpine to re-render
         },
 
         includeWeightMatrixInExport: false,
@@ -892,6 +888,123 @@ function appData() {
             const yPos = -row * tileHeight;
             
             return `${xPos}px ${yPos}px`;
-        }
+        },
+
+        // --- Scenario Simulation Logic ---
+
+        // Helper to parse save values like '3+' or '-' into numbers (or a high number for '-')
+        parseSaveValue(saveStr) {
+            if (!saveStr || saveStr === '-') return 7; // Handle '-' or null/undefined input
+            const numStr = saveStr.replace('+', ''); // Remove the '+' sign
+            const num = parseInt(numStr, 10);      // Convert the remaining string to an integer
+            return Number.isNaN(num) ? 7 : num;    // If parsing failed (NaN), return 7, otherwise return the number
+        },
+
+        // Helper to calculate probability based on D6 roll needed (e.g., 3+ -> 4/6)
+        getD6Probability(rollNeeded) {
+            if (rollNeeded <= 1) return 1.0; // Always succeeds
+            if (rollNeeded >= 7) return 0.0; // Always fails
+            return (7 - rollNeeded) / 6.0;
+        },
+
+        // Calculate hit probability based on WS comparison
+        getHitProbability(attackerWS, targetWS) {
+            let rollNeeded;
+            if (attackerWS >= targetWS * 2) {
+                rollNeeded = 2;
+            } else if (attackerWS > targetWS) {
+                rollNeeded = 3;
+            } else if (attackerWS == targetWS) {
+                rollNeeded = 4;
+            } else if (attackerWS * 2 <= targetWS) {
+                rollNeeded = 6;
+            } else { // attackerWS < targetWS but not half or less
+                rollNeeded = 5;
+            }
+            return this.getD6Probability(rollNeeded);
+        },
+
+        // Calculate wound probability based on S vs T comparison
+        getWoundProbability(attackerS, targetT) {
+            let rollNeeded;
+            if (attackerS >= targetT * 2) {
+                rollNeeded = 2;
+            } else if (attackerS > targetT) {
+                rollNeeded = 3;
+            } else if (attackerS == targetT) {
+                rollNeeded = 4;
+            } else if (attackerS * 2 <= targetT) {
+                rollNeeded = 6;
+            } else { // attackerS < targetT but not half or less
+                rollNeeded = 5;
+            }
+            // Add check for T0/Invalid toughness? Assume T >= 1 for now
+            if (targetT <= 0) return 1.0; // Auto-wound if T is 0 or less? Or handle error?
+            return this.getD6Probability(rollNeeded);
+        },
+
+        // Calculate probability of failing a save (ignoring AP for now)
+        getFailSaveProbability(targetSave, targetInvuln) {
+            const saveVal = this.parseSaveValue(targetSave);
+            const invulnVal = this.parseSaveValue(targetInvuln);
+            const bestSave = Math.min(saveVal, invulnVal); // Takes the better of the two saves
+
+            if (bestSave >= 7) return 1.0; // No save or 7+ save always fails
+
+            // Probability of *failing* is (rollNeeded - 1) / 6
+            return 1.0 - this.getD6Probability(bestSave);
+        },
+
+        // Main function to calculate scenario outcomes (currently only Melee Attack)
+        calculateScenarioOutcome() {
+            if (!this.selectedModel || this.scenarioConfig.meleeAttack.targetIndex < 0) {
+                return "Select an attacker and target model.";
+            }
+
+            const attacker = this.selectedModel;
+            const target = this.models[this.scenarioConfig.meleeAttack.targetIndex];
+
+            if (!attacker || !target) {
+                return "Error: Attacker or Target model not found.";
+            }
+            
+            // Check for necessary stats
+            if (typeof attacker.attacks === 'undefined' || attacker.attacks === null ||
+                typeof attacker.weaponSkill === 'undefined' || attacker.weaponSkill === null ||
+                typeof attacker.strength === 'undefined' || attacker.strength === null ||
+                typeof target.weaponSkill === 'undefined' || target.weaponSkill === null || // Needed for WS comparison
+                typeof target.toughness === 'undefined' || target.toughness === null ||
+                typeof target.save === 'undefined' || typeof target.invulnSave === 'undefined') {
+                return "Error: Missing required stats on attacker or target.";
+            }
+
+
+            // Calculate probabilities
+            const pHit = this.getHitProbability(attacker.weaponSkill, target.weaponSkill);
+            const pWound = this.getWoundProbability(attacker.strength, target.toughness);
+            const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave);
+
+            // --- TEMP LOGGING ---
+            console.log(`Scenario Calc: Attacker=${attacker.name}, Target=${target.name}`);
+            console.log(`  Raw Stats: Att(WS${attacker.weaponSkill}, S${attacker.strength}, A${attacker.attacks}), Tgt(WS${target.weaponSkill}, T${target.toughness}, Sv${target.save}, Inv${target.invulnSave})`);
+            console.log(`  Probabilities: pHit=${pHit.toFixed(3)}, pWound=${pWound.toFixed(3)}, pFailSave=${pFailSave.toFixed(3)}`);
+            // --- END TEMP LOGGING ---
+
+            // Calculate expected wounds (assuming 1 damage per unsaved wound for now)
+            const expectedWounds = attacker.attacks * pHit * pWound * pFailSave;
+            
+            // Calculate expected wounds per point
+            const attackerPoints = this.getRelativePoints(attacker); // Use existing function
+            const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0;
+
+
+            return `Combat against ${target.name || 'Unnamed Target'}: \n` +
+                   `  Hits: ${(attacker.attacks * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)\n` +
+                   `  Wounds: ${(attacker.attacks * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)\n` +
+                   `  Unsaved Wounds: ${expectedWounds.toFixed(2)} (Save: ${((1-pFailSave) * 100).toFixed(0)}%)\n` +
+                   `  Expected Wounds per Point: ${(efficiency).toFixed(4)}`;
+        },
+
+        // --- End Scenario Simulation Logic ---
     };
 } 
