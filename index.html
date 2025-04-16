@@ -572,7 +572,7 @@
                             <ul style="list-style: none; padding-left: 0;">
                                 <template x-for="itemId in selectedModel.assignedArmoryItemIds" :key="itemId">
                                     <li style="margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">
-                                        <span x-text="getArmoryItemById(itemId)?.name || 'Unknown Item'" style="font-size: 0.9em;"></span>
+                                        <span x-text="getArmoryItemById(itemId)?.name || 'Unknown Item (' + itemId + ')'" style="font-size: 0.9em;"></span>
                                         <button @click="removeEquipmentFromModel(itemId)" class="remove-equip-btn" title="Remove Item">X</button>
                                     </li>
                                 </template>
@@ -613,7 +613,7 @@
                     <!-- Loop through scenarios and display relevant results -->
                     <template x-for="scenario in scenarios" :key="scenario.id">
                         <!-- Check if the scenario involves the selectedModel as the attacker -->
-                        <div x-show="scenario.type === 'meleeAttack'" class="scenario-result-item">
+                        <div x-show="scenario.type === 'meleeAttack' || scenario.type === 'rangedAttack'" class="scenario-result-item">
                             <h4>
                                 <span x-text="scenario.name || 'Unnamed Scenario'"></span>
                                 (<span x-text="scenario.type" style="font-style: italic; font-size: 0.9em;"></span>)
@@ -681,8 +681,9 @@
                             <label for="scenarioType">Scenario Type:</label>
                             <select id="scenarioType" x-model="selectedScenario.type">
                                 <option value="meleeAttack">Melee Attack</option>
-                                <!-- Add other types later:
+                                <!-- Add other types later: -->
                                 <option value="rangedAttack">Ranged Attack</option>
+                                <!--
                                 <option value="meleeDefense">Melee Defense</option>
                                 <option value="rangedDefense">Ranged Defense</option>
                                 -->
@@ -690,8 +691,8 @@
                         </div>
 
                         <!-- Melee Attack Specific Fields -->
-                        <div x-show="selectedScenario.type === 'meleeAttack'" class="scenario-type-fields">
-                            <h4>Melee Attack Options</h4>
+                        <div x-show="selectedScenario.type === 'meleeAttack' || selectedScenario.type === 'rangedAttack'" class="scenario-type-fields">
+                            <h4>Target Selection</h4>
                             <div class="form-group">
                                 <label for="targetModels">Target Models:</label>
                                 <select id="targetModels" x-model="selectedScenario.targetModelIds" multiple size="5" style="width: 100%;">
@@ -706,10 +707,11 @@
                         </div>
 
                         <!-- Placeholder for Ranged Attack Fields -->
-                        <div x-show="selectedScenario.type === 'rangedAttack'" class="scenario-type-fields">
-                            <h4>Ranged Attack Options</h4>
-                            <p>(Weapon profile and target selection will go here)</p>
-                        </div>
+                        <!-- REMOVED: Replaced by showing the Melee section for Ranged attacks too -->
+                        <!-- <div x-show="selectedScenario.type === 'rangedAttack'" class="scenario-type-fields"> -->
+                        <!--    <h4>Ranged Attack Options</h4> -->
+                        <!--    <p>(Weapon profile and target selection will go here)</p> -->
+                        <!-- </div> -->
 
                         <!-- Placeholder for Defense Fields -->
                         <div x-show="selectedScenario.type === 'meleeDefense' || selectedScenario.type === 'rangedDefense'" class="scenario-type-fields">

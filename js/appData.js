@@ -17,7 +17,7 @@ function appData() {
                 leadership: 7,
                 save: '5+',
                 invulnSave: '-',
-                assignedArmoryItemIds: []
+                assignedArmoryItemIds: ["Lasgun"]
             },
             {
                 id: 2, // Added ID
@@ -33,7 +33,7 @@ function appData() {
                 leadership: 8,
                 save: '3+',
                 invulnSave: '-',
-                assignedArmoryItemIds: []
+                assignedArmoryItemIds:  ["Bolter"] // Use names for default assignment
             },
             {
                 id: 3, // Added ID
@@ -49,7 +49,7 @@ function appData() {
                 leadership: 8,
                 save: '2+',
                 invulnSave: '5+',
-                assignedArmoryItemIds: []
+                assignedArmoryItemIds: ["Storm Bolter", "Power Fist"] // Use names for default assignment
             },
             {
                 id: 4, // Added ID
@@ -65,7 +65,7 @@ function appData() {
                 leadership: 6,
                 save: '6+',
                 invulnSave: '-',
-                assignedArmoryItemIds: []
+                assignedArmoryItemIds: ["Choppa"]
             },
             {
                 id: 5, // Added ID
@@ -81,7 +81,7 @@ function appData() {
                 leadership: 8,
                 save: '5+',
                 invulnSave: '-',
-                assignedArmoryItemIds: []
+                assignedArmoryItemIds: ["Shuriken Catapult"]
             }
         ],
         selectedModel: null,
@@ -344,13 +344,23 @@ function appData() {
             // If no scenarios were loaded, create a default one
             if (this.scenarios.length === 0) {
                 console.log('No saved scenarios found, creating default scenario.');
-                const defaultScenario = {
+                const defaultMeleeScenario = {
                     id: 'scenario_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
                     name: 'Melee vs Guardsman',
                     type: 'meleeAttack',
                     targetModelIds: [1] // Target the Imperial Guardsman (ID 1)
                 };
-                this.scenarios.push(defaultScenario);
+                this.scenarios.push(defaultMeleeScenario);
+
+                // Add the default Ranged scenario
+                const defaultRangedScenario = {
+                    id: 'scenario_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8), // Slightly different random part
+                    name: 'Ranged vs Guardsman',
+                    type: 'rangedAttack',
+                    targetModelIds: [1] // Target the Imperial Guardsman (ID 1)
+                };
+                this.scenarios.push(defaultRangedScenario);
+
                 this.saveScenarios(); // Save the newly created default scenario
             }
 
@@ -1274,12 +1284,30 @@ function appData() {
             return this.getD6Probability(rollNeeded);
         },
 
-        // Calculate probability of failing a save (ignoring AP for now)
-        getFailSaveProbability(targetSave, targetInvuln) {
-            const saveVal = this.parseSaveValue(targetSave);
+        // Calculate probability of failing a save, considering AP
+        getFailSaveProbability(targetSave, targetInvuln, ap = 0) {
+            const baseSaveVal = this.parseSaveValue(targetSave);
             const invulnVal = this.parseSaveValue(targetInvuln);
-            const bestSave = Math.min(saveVal, invulnVal); // Takes the better of the two saves
-            return 1.0 - this.getD6Probability(bestSave); // Probability of failing
+            
+            // Ensure AP is a number; treat null/undefined/0 as AP 0 (no modification)
+            const apVal = parseInt(ap, 10) || 0; 
+            
+            // See if AP is lower than the armor save, if so, remove their armor save
+            let modifiedSaveVal = baseSaveVal;
+            if(apVal > 0) {
+                if(apVal <= baseSaveVal) {
+                    modifiedSaveVal = 7;
+                }
+            }
+            
+            // Determine the best save roll needed (lower is better)
+            // If the modified save is worse than 7+, use the invuln (or 7+ if no invuln)
+            const effectiveSave = Math.min(modifiedSaveVal, invulnVal);
+
+            // Clamp the effective save roll needed between 2 and 7 (you can't need less than 2+, or more than impossible)
+            const finalSaveNeeded = Math.max(2, Math.min(effectiveSave, 7));
+
+            return 1.0 - this.getD6Probability(finalSaveNeeded); // Probability of *failing* the save
         },
 
         // --- Main Scenario Calculation Dispatcher ---
@@ -1289,8 +1317,8 @@ function appData() {
             switch (scenario.type) {
                 case 'meleeAttack':
                     return this.calculateMeleeAttackOutcome(scenario, perspectiveModel);
-                // case 'rangedAttack':
-                //     return this.calculateRangedAttackOutcome(scenario, perspectiveModel);
+                case 'rangedAttack':
+                    return this.calculateRangedAttackOutcome(scenario, perspectiveModel);
                 // case 'meleeDefense':
                 //     return this.calculateMeleeDefenseOutcome(scenario, perspectiveModel);
                 // case 'rangedDefense':
@@ -1316,231 +1344,221 @@ function appData() {
                     continue; // Skip to next target if this one isn't found
                 }
 
-                // Check for necessary stats (basic check)
+                // Basic check for essential stats
                 if (typeof attacker.attacks === 'undefined' || typeof attacker.weaponSkill === 'undefined' || typeof attacker.strength === 'undefined' ||
                     typeof target.weaponSkill === 'undefined' || typeof target.toughness === 'undefined' || typeof target.save === 'undefined' || typeof target.invulnSave === 'undefined') {
                     results.push(` - Target ${target.name || '(Unnamed)'}: Missing required stats.`);
                     continue;
                 }
 
-                // Calculate probabilities
+                // Determine effective combat stats based on assigned melee weapon
+                let effectiveS = attacker.strength;
+                let effectiveA = attacker.attacks;
+                let effectiveAP = 0; // Default AP modifier (no effect on save)
+                let weaponUsedName = 'Base Stats';
+                let weaponAPDisplay = '-'; // For display
+
+                const assignedIds = attacker.assignedArmoryItemIds || [];
+                let firstMeleeWeapon = null;
+                for (const itemId of assignedIds) {
+                    // Use the versatile lookup function
+                    const item = this.getArmoryItemById(itemId); 
+                    if (item && item.type === 'meleeWeapon') {
+                        firstMeleeWeapon = item;
+                        break; // Use the first one found
+                    }
+                }
+
+                if (firstMeleeWeapon) {
+                    weaponUsedName = firstMeleeWeapon.name;
+                    effectiveS = this.applyStrengthModifier(attacker.strength, firstMeleeWeapon.meleeStrength);
+                    effectiveA = this.applyAttacksModifier(attacker.attacks, firstMeleeWeapon.meleeAttacks);
+                    // Get AP value from weapon, treat null/undefined as 0
+                    effectiveAP = parseInt(firstMeleeWeapon.ap, 10) || 0; 
+                    // Handle AP display for '-'
+                    weaponAPDisplay = (effectiveAP === 0) ? '-' : effectiveAP;
+                }
+
+                // Calculate probabilities using effective stats
                 const pHit = this.getHitProbability(attacker.weaponSkill, target.weaponSkill);
-                const pWound = this.getWoundProbability(attacker.strength, target.toughness);
-                const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave);
+                const pWound = this.getWoundProbability(effectiveS, target.toughness);
+                const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave, effectiveAP);
 
-                // Calculate expected wounds (assuming 1 damage per unsaved wound for now)
-                const expectedWounds = attacker.attacks * pHit * pWound * pFailSave;
+                // Calculate expected wounds
+                const expectedWounds = effectiveA * pHit * pWound * pFailSave;
 
-                // Calculate expected wounds per point (using attacker's points)
+                // Calculate efficiency
                 const attackerPoints = this.calculatePoints(attacker); // Use the absolute points calculation
-                // Avoid division by zero or negative points
-                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0; 
+                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0;
+                const saveChance = (1.0 - pFailSave);
 
                 // Format result for this target
                 results.push(
-                    `  vs ${target.name || '(Unnamed)'}: 
-` +
-                    `    Hits: ${(attacker.attacks * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)\n` +
-                    `    Wounds: ${(attacker.attacks * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)\n` +
-                    `    Unsaved: ${expectedWounds.toFixed(2)} (Save: ${((1 - pFailSave) * 100).toFixed(0)}%)\n` +
-                    `    Wounds/Point: ${efficiency.toFixed(4)}\n` +
-                    `    Efficiency: ${(1000*efficiency).toFixed(2)}`
+                    `  vs ${target.name || '(Unnamed)'} (T${target.toughness}, ${target.save}/${target.invulnSave}):
+` + // Added Target stats for context
+                    `    Weapon: ${weaponUsedName} (S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})
+` + // Show effective stats used
+                    `    Hits: ${(effectiveA * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)
+` + // Used effectiveA
+                    `    Wounds: ${(effectiveA * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)
+` + // Used effectiveA
+                    `    Unsaved: ${expectedWounds.toFixed(2)} (Save: ${(saveChance * 100).toFixed(0)}%)
+` + // Used pFailSave which includes AP
+                    `    Wounds/Point: ${efficiency.toFixed(4)}
+` + // Used calculated efficiency
+                    `    Efficiency: ${(1000 * efficiency).toFixed(2)}`
                 );
             }
             // Combine results for all targets
             return results.join('\n\n'); // Add extra newline between target results
         },
+        
+        calculateRangedAttackOutcome(scenario, attacker) {
+            if (!attacker) return "Attacker not found.";
+            if (!scenario.targetModelIds || scenario.targetModelIds.length === 0) {
+                return "No targets selected for this ranged scenario.";
+            }
+
+            // Find the first equipped ranged weapon
+            let weaponUsed = null;
+            const assignedIds = attacker.assignedArmoryItemIds || [];
+            for (const itemId of assignedIds) {
+                // Use the versatile lookup function
+                const item = this.getArmoryItemById(itemId);
+                if (item && item.type === 'rangedWeapon') {
+                    weaponUsed = item;
+                    break; // Use the first one found
+                }
+            }
+
+            if (!weaponUsed) {
+                return `No ranged weapon equipped on ${attacker.name || '(Unnamed)'}.`;
+            }
+
+            let results = [];
+            // Calculate outcome for each target
+            for (const targetId of scenario.targetModelIds) {
+                const target = this.getModelById(targetId);
+                if (!target) {
+                    results.push(` - Target ID ${targetId}: Not found`);
+                    continue;
+                }
+
+                // Basic check for essential stats
+                if (typeof attacker.ballisticSkill === 'undefined' || 
+                    typeof weaponUsed.strength === 'undefined' || typeof weaponUsed.ap === 'undefined' || typeof weaponUsed.attacks === 'undefined' ||
+                    typeof target.toughness === 'undefined' || typeof target.save === 'undefined' || typeof target.invulnSave === 'undefined') {
+                    results.push(` - Target ${target.name || '(Unnamed)'}: Missing required stats (Attacker BS, Weapon S/AP/A, Target T/Sv/Inv).`);
+                    continue;
+                }
+                
+                // Get effective stats (mostly from weapon, hit chance from model)
+                const effectiveS = weaponUsed.strength;
+                const effectiveA = weaponUsed.attacks; // TODO: Factor in weapon type (Rapid Fire, Heavy etc.) later
+                const effectiveAP = parseInt(weaponUsed.ap, 10) || 0; 
+                const attackerBS = this.parseSaveValue(attacker.ballisticSkill); // Reuse save parser for BS X+
+                const weaponAPDisplay = (effectiveAP === 0) ? '-' : effectiveAP;
+                const weaponRange = weaponUsed.range || 'N/A';
+
+                // Calculate probabilities
+                const pHit = this.getD6Probability(attackerBS);
+                const pWound = this.getWoundProbability(effectiveS, target.toughness);
+                const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave, effectiveAP);
+
+                // Calculate expected wounds
+                const expectedWounds = effectiveA * pHit * pWound * pFailSave;
+
+                // Calculate efficiency
+                const attackerPoints = this.calculatePoints(attacker);
+                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0;
+                const saveChance = (1.0 - pFailSave);
+
+                // Format result
+                results.push(
+                    `  vs ${target.name || '(Unnamed)'} (T${target.toughness}, ${target.save}/${target.invulnSave}):
+` +
+                    `    Weapon: ${weaponUsed.name} (R:${weaponRange}" S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})
+` +
+                    `    Attacker BS: ${attacker.ballisticSkill}
+` +
+                    `    Hits: ${(effectiveA * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)
+` +
+                    `    Wounds: ${(effectiveA * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)
+` +
+                    `    Unsaved: ${expectedWounds.toFixed(2)} (Save: ${(saveChance * 100).toFixed(0)}%)
+` +
+                    `    Wounds/Point: ${efficiency.toFixed(4)}
+` +
+                    `    Efficiency: ${(1000 * efficiency).toFixed(2)}`
+                );
+            }
+            return results.join('\n\n');
+        },
         // Add calculateRangedAttackOutcome, etc. here later
 
         // --- End Scenario Calculation Logic ---
 
-        // --- Armory Item Management --- 
-        addArmoryItem() {
-            const newItem = {
-                id: this.nextArmoryItemId++,
-                name: 'New Item',
-                type: 'wargear', // Default to wargear
-                description: '',
-                baseCost: 0, // Renamed from points
-                // Add new stat fields with default null/0 values
-                range: null,
-                strength: null,
-                ap: null,
-                attacks: null, // Renamed field
-                meleeStrength: '-', // Add new field with default '-'
-                meleeAttacks: '-', // Add new field with default '-'
-                weaponType: 'Assault', // Default new items to Assault for now
-                statWeights: Array(this.getStatOrder().length).fill(0) // Use this.
-            };
-            this.armoryItems.push(newItem);
-            this.selectedArmoryItemId = newItem.id; // Select the new item for editing
-            this.saveArmoryItems();
-        },
-
-        removeArmoryItem(itemId) {
-            if (confirm('Are you sure you want to delete this armory item?')) {
-                const index = this.armoryItems.findIndex(item => item.id === itemId);
-                if (index > -1) {
-                    this.armoryItems.splice(index, 1);
-                    if (this.selectedArmoryItemId === itemId) {
-                        this.selectedArmoryItemId = null; // Deselect if it was the one removed
-                    }
-                    this.saveArmoryItems();
-                } else {
-                    console.error("Armory item to delete not found:", itemId);
-                }
+        // --- Helper Functions for Stat Modifiers ---
+        applyStrengthModifier(baseStrength, modifier) {
+            if (modifier === '-' || modifier === null || modifier === undefined) {
+                return baseStrength;
             }
-        },
-
-        duplicateArmoryItem(itemId) {
-            const itemToDuplicate = this.armoryItems.find(item => item.id === itemId);
-            if (itemToDuplicate) {
-                const newItem = {
-                    ...itemToDuplicate, // Copy existing properties
-                    id: this.nextArmoryItemId++, // Assign a new unique ID
-                    name: itemToDuplicate.name + ' (Copy)' // Modify name slightly
-                };
-                const originalIndex = this.armoryItems.findIndex(item => item.id === itemId);
-                this.armoryItems.splice(originalIndex + 1, 0, newItem); // Insert after original
-                this.selectedArmoryItemId = newItem.id; // Select the new item
-                this.saveArmoryItems();
-            } else {
-                console.error("Armory item to duplicate not found:", itemId);
+            if (typeof modifier === 'string') {
+                if (modifier.toLowerCase() === 'x2') {
+                    return baseStrength * 2;
+                }
+                if (modifier.startsWith('+')) {
+                    return baseStrength + parseInt(modifier.substring(1), 10);
+                }
+                if (modifier.startsWith('-')) {
+                    return baseStrength - parseInt(modifier.substring(1), 10);
+                }
+                // Potentially handle fixed values later if needed
+                const fixedValue = parseInt(modifier, 10);
+                if (!isNaN(fixedValue)) return fixedValue; // If it's just a number, use it directly?
             }
+             // Default case if modifier is weird
+            return baseStrength; 
         },
 
-        incrementArmoryStat(item, statName) {
-            const maxVal = 10; // Assuming max S is 10 for weapons too? Adjust if needed.
-            if (item && typeof item[statName] === 'number' && item[statName] < maxVal) {
-                item[statName]++;
-                this.saveArmoryItems(); // Save after incrementing
-            } else if (item && (item[statName] === null || item[statName] === undefined)) {
-                 // Handle case where it might be null, start from 1
-                 item[statName] = 1;
-                 this.saveArmoryItems();
+        applyAttacksModifier(baseAttacks, modifier) {
+            if (modifier === '-' || modifier === null || modifier === undefined) {
+                return baseAttacks;
             }
-        },
-
-        decrementArmoryStat(item, statName) {
-             const minVal = 1; // Assuming min S is 1
-             if (item && typeof item[statName] === 'number' && item[statName] > minVal) {
-                 item[statName]--;
-                 this.saveArmoryItems(); // Save after decrementing
-             }
-        },
-
-        incrementArmoryAP(item) { // ▲ makes AP worse (higher number)
-            if (item) {
-                let currentVal = parseInt(item.ap, 10); // Ensure we have a number, 0 if '-' or invalid
-                if (isNaN(currentVal)) currentVal = 0;
-
-                if (currentVal === 0) { // Was '-'
-                    item.ap = 6;
-                } else if (currentVal >= 1 && currentVal < 6) {
-                    item.ap = currentVal + 1;
+            if (typeof modifier === 'string') {
+                 if (modifier.toLowerCase() === 'x2') {
+                     return baseAttacks * 2;
+                 }
+                if (modifier.startsWith('+')) {
+                    return baseAttacks + parseInt(modifier.substring(1), 10);
                 }
-                // If currentVal is 6, do nothing (cannot get worse)
-                this.saveArmoryItems();
+                if (modifier.startsWith('-')) {
+                    // Ensure attacks don't go below 1 (or 0? Let's say 1)
+                    return Math.max(1, baseAttacks - parseInt(modifier.substring(1), 10));
+                }
+                // Potentially handle fixed values later
+                const fixedValue = parseInt(modifier, 10);
+                if (!isNaN(fixedValue)) return fixedValue; // If it's just a number, use it directly?
             }
+             // Default case
+            return baseAttacks;
         },
+        // --- End Helper Functions ---
 
-        decrementArmoryAP(item) { // ▼ makes AP better (lower number) OR wraps from '-' to 6
-             if (item) {
-                let currentVal = parseInt(item.ap, 10);
-                if (isNaN(currentVal)) currentVal = 0;
-
-                if (currentVal === 0) { // Was '-'
-                    item.ap = 6; // Wrap around to 6
-                } else if (currentVal === 1) {
-                    item.ap = 0; // Becomes '-'
-                } else if (currentVal > 1 && currentVal <= 6) {
-                    item.ap = currentVal - 1;
-                }
-                // No 'do nothing' case needed now
-                this.saveArmoryItems();
-             }
-        },
-
-        // Map weight value (e.g., -2 to 2) to color range (0 to 2)
-        mapWeightToColorValue(weight) {
-            const minWeight = -2;
-            const maxWeight = 2;
-            // Clamp weight within bounds
-            const clampedWeight = Math.max(minWeight, Math.min(maxWeight, weight || 0));
-            // Map to 0-2 range
-            // Formula: ((value - min) / (max - min)) * newMax
-            return ((clampedWeight - minWeight) / (maxWeight - minWeight)) * 2;
-        },
-
-        incrementArmoryWeight(item, index) {
-            const maxVal = 2.0; // Max weight
-            const step = 0.1;
-             // Initialize if null/undefined
-            if (item.statWeights[index] === null || item.statWeights[index] === undefined) {
-                item.statWeights[index] = 0;
+        // Helper to get Armory Item by ID or Name
+        getArmoryItemById(identifier) {
+            if (typeof identifier === 'number') {
+                // Lookup by ID if the identifier is a number
+                return this.armoryItems.find(item => item.id === identifier);
+            } else if (typeof identifier === 'string') {
+                // Lookup by name (case-insensitive) if the identifier is a string
+                const lowerCaseName = identifier.toLowerCase();
+                return this.armoryItems.find(item => item.name.toLowerCase() === lowerCaseName);
             }
-            if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] < maxVal) {
-                // Use toFixed to handle potential floating point inaccuracies
-                item.statWeights[index] = parseFloat((item.statWeights[index] + step).toFixed(1));
-                this.saveArmoryItems();
-            } else if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] >= maxVal){
-                 item.statWeights[index] = maxVal; // Clamp to max
-                 this.saveArmoryItems();
-            }
+            return null; // Return null if identifier is neither or not found
         },
 
-        decrementArmoryWeight(item, index) {
-             const minVal = -2.0; // Min weight
-             const step = 0.1;
-              // Initialize if null/undefined
-            if (item.statWeights[index] === null || item.statWeights[index] === undefined) {
-                item.statWeights[index] = 0;
-            }
-             if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] > minVal) {
-                 item.statWeights[index] = parseFloat((item.statWeights[index] - step).toFixed(1));
-                 this.saveArmoryItems();
-             } else if (item && typeof item.statWeights[index] === 'number' && item.statWeights[index] <= minVal){
-                 item.statWeights[index] = minVal; // Clamp to min
-                 this.saveArmoryItems();
-             }
-        },
-
-        // Helper function to save armory items to localStorage
-        saveArmoryItems() {
-             // Ensure all items have the new fields before saving
-            this.armoryItems.forEach(item => {
-                if (item.range === undefined) item.range = null;
-                if (item.strength === undefined) item.strength = null;
-                if (item.ap === undefined) item.ap = null;
-                if (item.attacks === undefined) {
-                    item.attacks = item.additionalAttacks !== undefined ? item.additionalAttacks : null;
-                    delete item.additionalAttacks;
-                }
-                if (item.meleeStrength === undefined) {
-                    item.meleeStrength = '-';
-                }
-                if (item.meleeAttacks === undefined) {
-                    item.meleeAttacks = '-';
-                }
-                if (item.weaponType === undefined) {
-                    item.weaponType = item.type === 'rangedWeapon' ? 'Assault' : null;
-                }
-                if (item.statWeights === undefined || !Array.isArray(item.statWeights) || item.statWeights.length !== this.getStatOrder().length) {
-                    item.statWeights = Array(this.getStatOrder().length).fill(0);
-                }
-                if (item.baseCost === undefined) {
-                    item.baseCost = item.points !== undefined ? item.points : 0;
-                    delete item.points;
-                }
-            });
-            localStorage.setItem('grimResolverArmoryItems', JSON.stringify(this.armoryItems));
-            console.log('Armory items saved.');
-        },
-
-        // Helper to get Armory Item by ID
-        getArmoryItemById(id) {
-            return this.armoryItems.find(item => item.id === id);
-        },
+        // --- Armory Item Management ---
 
         // --- Add Direct Equipment Assignment Functions ---
         addEquipmentToModel(itemId) {
@@ -1560,6 +1578,7 @@ function appData() {
         removeEquipmentFromModel(itemId) {
             if (!this.selectedModel || !this.selectedModel.assignedArmoryItemIds) return;
             
+            // Use indexOf which works for both strings and numbers
             const index = this.selectedModel.assignedArmoryItemIds.indexOf(itemId);
             if (index > -1) {
                 this.selectedModel.assignedArmoryItemIds.splice(index, 1);
@@ -1575,10 +1594,19 @@ function appData() {
             const searchTerm = this.equipmentSearchTerm.toLowerCase();
 
             return this.armoryItems.filter(item => {
-                // Check if already assigned
-                if (assignedIds.includes(item.id)) {
+                // Check if already assigned (by ID or Name)
+                const isAssigned = assignedIds.some(assignedId => {
+                    if (typeof assignedId === 'number') {
+                        return assignedId === item.id;
+                    } else if (typeof assignedId === 'string') {
+                        return assignedId.toLowerCase() === item.name.toLowerCase();
+                    }
+                    return false;
+                });
+                if (isAssigned) {
                     return false;
                 }
+
                 // Check if matches search term (if term exists)
                 if (searchTerm && !item.name.toLowerCase().includes(searchTerm)) {
                     return false;
