@@ -16,7 +16,8 @@ function appData() {
                 attacks: 1,
                 leadership: 7,
                 save: '5+',
-                invulnSave: '-'
+                invulnSave: '-',
+                assignedArmoryItemIds: []
             },
             {
                 id: 2, // Added ID
@@ -31,7 +32,8 @@ function appData() {
                 attacks: 1,
                 leadership: 8,
                 save: '3+',
-                invulnSave: '-'
+                invulnSave: '-',
+                assignedArmoryItemIds: []
             },
             {
                 id: 3, // Added ID
@@ -46,7 +48,8 @@ function appData() {
                 attacks: 2,
                 leadership: 8,
                 save: '2+',
-                invulnSave: '5+'
+                invulnSave: '5+',
+                assignedArmoryItemIds: []
             },
             {
                 id: 4, // Added ID
@@ -61,7 +64,8 @@ function appData() {
                 attacks: 2,
                 leadership: 6,
                 save: '6+',
-                invulnSave: '-'
+                invulnSave: '-',
+                assignedArmoryItemIds: []
             },
             {
                 id: 5, // Added ID
@@ -76,7 +80,8 @@ function appData() {
                 attacks: 1,
                 leadership: 8,
                 save: '5+',
-                invulnSave: '-'
+                invulnSave: '-',
+                assignedArmoryItemIds: []
             }
         ],
         selectedModel: null,
@@ -100,6 +105,9 @@ function appData() {
         armoryItems: [], // Array to hold armory item objects
         selectedArmoryItemId: null, // ID of the item being edited
         armorySearchTerm: '', // ++ Added for search filter ++
+
+        // ++ Add Equipment Search State ++
+        equipmentSearchTerm: '',
 
         // Point value lookup tables for each stat
         pointValueLookups: {
@@ -313,6 +321,13 @@ function appData() {
                 this.selectedModel = this.models[0];
             }
 
+            // Ensure all models have the assignedArmoryItemIds property
+            this.models.forEach(model => {
+                if (model.assignedArmoryItemIds === undefined || !Array.isArray(model.assignedArmoryItemIds)) {
+                    model.assignedArmoryItemIds = [];
+                }
+            });
+
             // Load scenarios
             const savedScenarios = localStorage.getItem('grimResolverScenarios');
             if (savedScenarios) {
@@ -510,7 +525,8 @@ function appData() {
                 attacks: lastModel.attacks,
                 leadership: lastModel.leadership,
                 save: lastModel.save,
-                invulnSave: lastModel.invulnSave
+                invulnSave: lastModel.invulnSave,
+                assignedArmoryItemIds: [] // Initialize for new model
             };
             this.models.push(newModel);
             this.selectedModel = newModel; // Select the newly added model
@@ -531,7 +547,8 @@ function appData() {
                 attacks: modelToDuplicate.attacks,
                 leadership: modelToDuplicate.leadership,
                 save: modelToDuplicate.save,
-                invulnSave: modelToDuplicate.invulnSave
+                invulnSave: modelToDuplicate.invulnSave,
+                assignedArmoryItemIds: [...modelToDuplicate.assignedArmoryItemIds] // Copy assigned items
             };
             this.models.splice(index + 1, 0, newModel);
             this.selectedModel = newModel; // Select the newly duplicated model
@@ -798,7 +815,8 @@ function appData() {
                             attacks: parseInt(values[9]),
                             leadership: parseInt(values[10]),
                             save: values[11],
-                            invulnSave: values[12]
+                            invulnSave: values[12],
+                            assignedArmoryItemIds: [] // Initialize for imported model
                         };
                     });
                     
@@ -1517,8 +1535,58 @@ function appData() {
             });
             localStorage.setItem('grimResolverArmoryItems', JSON.stringify(this.armoryItems));
             console.log('Armory items saved.');
+        },
+
+        // Helper to get Armory Item by ID
+        getArmoryItemById(id) {
+            return this.armoryItems.find(item => item.id === id);
+        },
+
+        // --- Add Direct Equipment Assignment Functions ---
+        addEquipmentToModel(itemId) {
+            if (!this.selectedModel) return;
+            // Ensure assignedArmoryItemIds exists
+            if (!this.selectedModel.assignedArmoryItemIds) {
+                this.selectedModel.assignedArmoryItemIds = [];
+            }
+            // Add item if not already present
+            if (!this.selectedModel.assignedArmoryItemIds.includes(itemId)) {
+                this.selectedModel.assignedArmoryItemIds.push(itemId);
+                this.equipmentSearchTerm = ''; // Clear search after adding
+                // TODO: Optionally save models to localStorage
+            }
+        },
+
+        removeEquipmentFromModel(itemId) {
+            if (!this.selectedModel || !this.selectedModel.assignedArmoryItemIds) return;
+            
+            const index = this.selectedModel.assignedArmoryItemIds.indexOf(itemId);
+            if (index > -1) {
+                this.selectedModel.assignedArmoryItemIds.splice(index, 1);
+                // TODO: Optionally save models to localStorage
+            }
+        },
+
+        // Computed property/helper for available equipment
+        get availableArmoryItemsForSelectedModel() {
+            if (!this.selectedModel) return [];
+            
+            const assignedIds = this.selectedModel.assignedArmoryItemIds || [];
+            const searchTerm = this.equipmentSearchTerm.toLowerCase();
+
+            return this.armoryItems.filter(item => {
+                // Check if already assigned
+                if (assignedIds.includes(item.id)) {
+                    return false;
+                }
+                // Check if matches search term (if term exists)
+                if (searchTerm && !item.name.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                return true; // Passes both checks
+            });
         }
-        // --- End Armory Item Management ---
+        // --- End Direct Equipment Assignment Functions ---
 
     };
 } 

@@ -565,6 +565,51 @@
                     <p>Select a model to see relevant scenario results.</p>
                 </div>
                 <div x-show="selectedModel">
+                    <!-- ++ START: Assigned Equipment Section (Modified) ++ -->
+                    <div class="assigned-equipment-section" style="margin-bottom: 15px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+                        <h4>Assigned Equipment:</h4>
+                        <template x-if="selectedModel.assignedArmoryItemIds && selectedModel.assignedArmoryItemIds.length > 0">
+                            <ul style="list-style: none; padding-left: 0;">
+                                <template x-for="itemId in selectedModel.assignedArmoryItemIds" :key="itemId">
+                                    <li style="margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span x-text="getArmoryItemById(itemId)?.name || 'Unknown Item'" style="font-size: 0.9em;"></span>
+                                        <button @click="removeEquipmentFromModel(itemId)" class="remove-equip-btn" title="Remove Item">X</button>
+                                    </li>
+                                </template>
+                            </ul>
+                        </template>
+                        <template x-if="!selectedModel.assignedArmoryItemIds || selectedModel.assignedArmoryItemIds.length === 0">
+                            <p style="font-style: italic; font-size: 0.9em;">No equipment assigned.</p>
+                        </template>
+                        
+                        <!-- Add Equipment Input/List -->
+                        <div class="add-equipment-controls" style="margin-top: 10px; border-top: 1px solid #ccc; padding-top: 10px;">
+                            <input type="text" 
+                                   x-model="equipmentSearchTerm"
+                                   placeholder="Add equipment..."
+                                   class="equipment-search-input"
+                                   style="width: calc(100% - 10px); margin-bottom: 5px;">
+                            
+                            <div class="available-items-list" x-show="equipmentSearchTerm.length > 0 && availableArmoryItemsForSelectedModel.length > 0"
+                                 style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; background-color: #fff;">
+                                <template x-for="item in availableArmoryItemsForSelectedModel" :key="item.id">
+                                    <div @click="addEquipmentToModel(item.id)"
+                                         class="available-item"
+                                         style="padding: 4px 8px; cursor: pointer; border-bottom: 1px solid #eee;">
+                                        <span x-text="item.name"></span> 
+                                        (<span x-text="item.type" style="font-style: italic; font-size: 0.9em;"></span>)
+                                        <!-- (<span x-text="item.baseCost"></span> pts) -->
+                                    </div>
+                                </template>
+                            </div>
+                            <div x-show="equipmentSearchTerm.length > 0 && availableArmoryItemsForSelectedModel.length === 0" 
+                                 style="font-style: italic; font-size: 0.9em; color: #777;">
+                                No matching items found or all assigned.
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ++ END: Assigned Equipment Section ++ -->
+
                     <!-- Loop through scenarios and display relevant results -->
                     <template x-for="scenario in scenarios" :key="scenario.id">
                         <!-- Check if the scenario involves the selectedModel as the attacker -->
