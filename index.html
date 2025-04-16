@@ -693,6 +693,12 @@
                             </select>
                         </div>
 
+                        <!-- Range Input (Conditional) -->
+                        <div class="form-group" x-show="selectedScenario.type === 'rangedAttack' || selectedScenario.type === 'rangedDefense'">
+                            <label for="scenarioRange">Scenario Range (")</label>
+                            <input type="number" id="scenarioRange" x-model.number="selectedScenario.range" placeholder="12" min="1" step="1">
+                        </div>
+
                         <!-- Melee Attack Specific Fields -->
                         <div x-show="selectedScenario.type === 'meleeAttack' || selectedScenario.type === 'rangedAttack'" class="scenario-type-fields">
                             <h4>Target Selection</h4>

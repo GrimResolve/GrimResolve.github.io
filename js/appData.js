@@ -349,7 +349,8 @@ function appData() {
                     name: 'Melee vs Guardsman',
                     type: 'meleeAttack',
                     targetModelIds: [1], // Target the Imperial Guardsman (ID 1)
-                    attackingModelIds: [] // Initialize attacker list
+                    attackingModelIds: [], // Initialize attacker list
+                    range: null // Not applicable for melee
                 };
                 this.scenarios.push(defaultMeleeScenario);
 
@@ -359,7 +360,8 @@ function appData() {
                     name: 'Ranged vs Guardsman',
                     type: 'rangedAttack',
                     targetModelIds: [1], // Target the Imperial Guardsman (ID 1)
-                    attackingModelIds: [] // Initialize attacker list
+                    attackingModelIds: [], // Initialize attacker list
+                    range: 12 // Default range
                 };
                 this.scenarios.push(defaultRangedScenario);
 
@@ -1136,6 +1138,7 @@ function appData() {
                 type: 'meleeAttack', // Default type
                 targetModelIds: [], // Default empty targets
                 attackingModelIds: [], // Initialize attacker list
+                range: 12 // Default range for new scenarios
                 // Add other default fields as needed for other types later
                 // weaponProfile: { name: '', shots: '', s: '', ap: '', d: '' }
             };
@@ -1191,6 +1194,10 @@ function appData() {
                             importedData.forEach(scenario => {
                                 if (scenario.attackingModelIds === undefined) {
                                     scenario.attackingModelIds = [];
+                                }
+                                // Add range initialization
+                                if (scenario.range === undefined || scenario.range === null) {
+                                     scenario.range = 12; // Default imported scenarios too
                                 }
                                 // Add similar checks for other fields if structure evolves
                             });
@@ -1460,45 +1467,64 @@ function appData() {
                     continue;
                 }
                 
+                // Get scenario range, default to 12 if invalid
+                const scenarioRange = parseInt(scenario.range, 10) || 12;
+                const weaponRange = parseInt(weaponUsed.range, 10);
+                const isOutOfRange = isNaN(weaponRange) || weaponRange < scenarioRange;
+
+                let expectedWounds = 0;
+                let efficiency = 0;
+                let resultString = '';
+                
+                const attackerPoints = this.calculatePoints(attacker);
+                
                 // Get effective stats (mostly from weapon, hit chance from model)
                 const effectiveS = weaponUsed.strength;
-                const effectiveA = weaponUsed.attacks; // TODO: Factor in weapon type (Rapid Fire, Heavy etc.) later
-                const effectiveAP = parseInt(weaponUsed.ap, 10) || 0; 
-                const attackerBS = this.parseSaveValue(attacker.ballisticSkill); // Reuse save parser for BS X+
+                let effectiveA = weaponUsed.attacks;
+                const effectiveAP = parseInt(weaponUsed.ap, 10) || 0;
+                const attackerBS = this.parseSaveValue(attacker.ballisticSkill);
                 const weaponAPDisplay = (effectiveAP === 0) ? '-' : effectiveAP;
-                const weaponRange = weaponUsed.range || 'N/A';
+                let rapidFireBonus = false;
 
-                // Calculate probabilities
-                const pHit = this.getD6Probability(attackerBS);
-                const pWound = this.getWoundProbability(effectiveS, target.toughness);
-                const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave, effectiveAP);
+                if (isOutOfRange) {
+                    // Format result for OUT OF RANGE
+                    resultString = 
+                        `  vs ${target.name || '(Unnamed)'} (T${target.toughness}, ${target.save}/${target.invulnSave}):\n` +
+                        `    Weapon: ${weaponUsed.name} (R:${weaponUsed.range || 'N/A'}") - OUT OF RANGE (${scenarioRange}")\n` +
+                        `    Wounds/Point: 0.0000\n` +
+                        `    Efficiency: 0.00`;
+                } else {
+                    // Handle Rapid Fire (only if in range)
+                    if (weaponUsed.weaponType === 'Rapid Fire' && scenarioRange <= weaponRange / 2) {
+                        effectiveA *= 2;
+                        rapidFireBonus = true;
+                    }
 
-                // Calculate expected wounds
-                const expectedWounds = effectiveA * pHit * pWound * pFailSave;
+                    // Calculate probabilities (only if in range)
+                    const pHit = this.getD6Probability(attackerBS);
+                    const pWound = this.getWoundProbability(effectiveS, target.toughness);
+                    const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave, effectiveAP);
+                    const saveChance = (1.0 - pFailSave);
 
-                // Calculate efficiency
-                const attackerPoints = this.calculatePoints(attacker);
-                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0;
-                const saveChance = (1.0 - pFailSave);
+                    // Calculate expected wounds (only if in range)
+                    expectedWounds = effectiveA * pHit * pWound * pFailSave;
+                    
+                    // Calculate efficiency (only if in range)
+                    efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0;
 
-                // Format result
-                results.push(
-                    `  vs ${target.name || '(Unnamed)'} (T${target.toughness}, ${target.save}/${target.invulnSave}):
-` +
-                    `    Weapon: ${weaponUsed.name} (R:${weaponRange}" S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})
-` +
-                    `    Attacker BS: ${attacker.ballisticSkill}
-` +
-                    `    Hits: ${(effectiveA * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)
-` +
-                    `    Wounds: ${(effectiveA * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)
-` +
-                    `    Unsaved: ${expectedWounds.toFixed(2)} (Save: ${(saveChance * 100).toFixed(0)}%)
-` +
-                    `    Wounds/Point: ${efficiency.toFixed(4)}
-` +
-                    `    Efficiency: ${(1000 * efficiency).toFixed(2)}`
-                );
+                    // Format result for IN RANGE
+                    resultString = 
+                        `  vs ${target.name || '(Unnamed)'} (T${target.toughness}, ${target.save}/${target.invulnSave}):\n` +
+                        `    Weapon: ${weaponUsed.name} (R:${weaponUsed.range}" S:${effectiveS} AP:${weaponAPDisplay} A:${weaponUsed.attacks}${rapidFireBonus ? 'x2' : ''} -> ${effectiveA})\n` +
+                        `    Scenario Range: ${scenarioRange}"\n` +
+                        `    Attacker BS: ${attacker.ballisticSkill}\n` +
+                        `    Hits: ${(effectiveA * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)\n` +
+                        `    Wounds: ${(effectiveA * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)\n` +
+                        `    Unsaved: ${expectedWounds.toFixed(2)} (Save: ${(saveChance * 100).toFixed(0)}%)\n` +
+                        `    Wounds/Point: ${efficiency.toFixed(4)}\n` +
+                        `    Efficiency: ${(1000 * efficiency).toFixed(2)}`;
+                }
+                results.push(resultString);
             }
             return results.join('\n\n');
         },
@@ -1511,7 +1537,9 @@ function appData() {
 
             let totalExpectedWounds = 0;
             let attackerDetails = [];
-            let totalAttackerPoints = 0; // Initialize total attacker points
+            let totalAttackerPoints = 0;
+
+            const scenarioRange = parseInt(scenario.range, 10) || 12; // Get scenario range once
 
             for (const attackerId of scenario.attackingModelIds) {
                 const attacker = this.getModelById(attackerId);
@@ -1536,49 +1564,73 @@ function appData() {
                     continue;
                 }
                 
-                // Essential stats check
+                 // Essential stats check BEFORE calculating points or range
                  if (typeof attacker.ballisticSkill === 'undefined' || 
                     typeof weaponUsed.strength === 'undefined' || typeof weaponUsed.ap === 'undefined' || typeof weaponUsed.attacks === 'undefined' ||
                     typeof defender.toughness === 'undefined' || typeof defender.save === 'undefined' || typeof defender.invulnSave === 'undefined') {
                     attackerDetails.push(` - ${attacker.name || '(Unnamed)'}: Missing required stats.`);
                     continue;
-                }
+                 }
 
-                // Add attacker's points to the total
+                // Add attacker's points regardless of range
                 totalAttackerPoints += this.calculatePoints(attacker);
 
-                // Calculate outcome vs this specific attacker
-                const effectiveS = weaponUsed.strength;
-                const effectiveA = weaponUsed.attacks; // TODO: Factor in weapon type later
-                const effectiveAP = parseInt(weaponUsed.ap, 10) || 0;
-                const attackerBS = this.parseSaveValue(attacker.ballisticSkill);
+                // Check range
+                const weaponRange = parseInt(weaponUsed.range, 10);
+                const isOutOfRange = isNaN(weaponRange) || weaponRange < scenarioRange;
 
-                const pHit = this.getD6Probability(attackerBS);
-                const pWound = this.getWoundProbability(effectiveS, defender.toughness);
-                const pFailSave = this.getFailSaveProbability(defender.save, defender.invulnSave, effectiveAP);
-                
-                const expectedWoundsFromAttacker = effectiveA * pHit * pWound * pFailSave;
+                let expectedWoundsFromAttacker = 0;
+                let attackerDetailString = '';
+                const weaponAPDisplay = (parseInt(weaponUsed.ap, 10) || 0) === 0 ? '-' : (parseInt(weaponUsed.ap, 10) || 0);
+                let rapidFireBonus = false;
+                let effectiveA = weaponUsed.attacks;
+
+                if (isOutOfRange) {
+                    // Format detail string for OUT OF RANGE
+                     attackerDetailString = 
+                        `  - ${attacker.name || '(Unnamed)'} (BS ${attacker.ballisticSkill})\n` +
+                        `    Weapon: ${weaponUsed.name} (R:${weaponUsed.range || 'N/A'}") - OUT OF RANGE (${scenarioRange}")\n` +
+                        `    Expected Wounds: 0.00`;
+                    // expectedWoundsFromAttacker remains 0
+                } else {
+                    // IN RANGE calculation
+                    const effectiveS = weaponUsed.strength;
+                    const effectiveAP = parseInt(weaponUsed.ap, 10) || 0;
+                    const attackerBS = this.parseSaveValue(attacker.ballisticSkill);
+
+                    // Handle Rapid Fire (only if in range)
+                    if (weaponUsed.weaponType === 'Rapid Fire' && scenarioRange <= weaponRange / 2) {
+                       effectiveA *= 2;
+                       rapidFireBonus = true;
+                    }
+
+                    // Calculate probabilities (only if in range)
+                    const pHit = this.getD6Probability(attackerBS);
+                    const pWound = this.getWoundProbability(effectiveS, defender.toughness);
+                    const pFailSave = this.getFailSaveProbability(defender.save, defender.invulnSave, effectiveAP);
+
+                    // Calculate expected wounds (only if in range)
+                    expectedWoundsFromAttacker = effectiveA * pHit * pWound * pFailSave;
+                   
+                    // Format detail string for IN RANGE
+                    attackerDetailString = 
+                        `  - ${attacker.name || '(Unnamed)'} (BS ${attacker.ballisticSkill})\n` +
+                        `    Weapon: ${weaponUsed.name} (R:${weaponUsed.range}" S:${effectiveS} AP:${weaponAPDisplay} A:${weaponUsed.attacks}${rapidFireBonus ? 'x2' : ''} -> ${effectiveA})\n` +
+                        `    Expected Wounds: ${expectedWoundsFromAttacker.toFixed(2)}`;
+                }
+
+                // Add the calculated expected wounds (0 if out of range) to total
                 totalExpectedWounds += expectedWoundsFromAttacker;
                 
-                // Store details for potential breakdown
-                const weaponAPDisplay = (effectiveAP === 0) ? '-' : effectiveAP;
-                attackerDetails.push(
-                    `  - ${attacker.name || '(Unnamed)'} (BS ${attacker.ballisticSkill})
-` +
-                    `    Weapon: ${weaponUsed.name} (S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})
-` +
-                    `    Expected Wounds: ${expectedWoundsFromAttacker.toFixed(2)}`
-                );
+                // Add the formatted detail string to the list
+                attackerDetails.push(attackerDetailString); 
             }
 
             // Format final result
-            let resultString = `Defender: ${defender.name || '(Unnamed)'} (T${defender.toughness}, ${defender.save}/${defender.invulnSave})
-`;
-            resultString += `Total Expected Wounds Sustained: ${totalExpectedWounds.toFixed(2)}
-
-`;
-            resultString += `Attacker Breakdown:
-`;
+            let resultString = `Defender: ${defender.name || '(Unnamed)'} (T${defender.toughness}, ${defender.save}/${defender.invulnSave})\n`;
+            resultString += `Total Expected Wounds Sustained: ${totalExpectedWounds.toFixed(2)}\n\n`;
+            resultString += `Scenario Range: ${scenarioRange}"\n\n`; // Display scenario range
+            resultString += `Attacker Breakdown:\n`;
             resultString += attackerDetails.join('\n');
 
             // Calculate and add efficiency metric
@@ -1588,7 +1640,6 @@ function appData() {
             } else if (totalAttackerPoints > 0) {
                 pointsPerWound = Infinity; // Attackers spent points but did no wounds
             }
-            // Handle case where no attackers or no wounds possible (pointsPerWound remains 0)
             
             resultString += `\n\nDefender Efficiency (Attacker Pts / Wound): ${pointsPerWound === Infinity ? 'Infinite (0 wounds)' : pointsPerWound.toFixed(2)} (Higher is better)`;
 
