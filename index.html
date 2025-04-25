@@ -96,6 +96,62 @@
                             <div class="breakdown-total">
                                 Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
                             </div>
+                            
+                            <!-- Capability Breakdown Section -->
+                            <template x-if="capabilities && selectedModel.assignedArmoryItemIds && selectedModel.assignedArmoryItemIds.length > 0">
+                                <div>
+                                    <div class="breakdown-subheader">Capability Breakdown:</div>
+                                    
+                                    <!-- Shooting Capability -->
+                                    <div class="capability-breakdown">
+                                        <div class="capability-name">Shooting: <span x-text="capabilities.shooting.toFixed(1)"></span></div>
+                                        <template x-if="selectedModel.assignedArmoryItemIds.some(id => {
+                                            const item = getArmoryItemById(id);
+                                            return item && item.type === 'rangedWeapon';
+                                        })">
+                                            <div class="capability-equipment">
+                                                <span class="equipment-header">Including weapons:</span>
+                                                <template x-for="itemId in selectedModel.assignedArmoryItemIds" :key="itemId">
+                                                    <template x-if="(() => {
+                                                        const item = getArmoryItemById(itemId);
+                                                        return item && item.type === 'rangedWeapon';
+                                                    })()">
+                                                        <div class="equipment-item">
+                                                            <span class="equipment-name" x-text="getArmoryItemById(itemId).name + ':'"></span>
+                                                            <span class="equipment-cost" x-text="getEquipmentCost(selectedModel, itemId).toFixed(1)"></span>
+                                                        </div>
+                                                    </template>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    
+                                    <!-- Combat Capability -->
+                                    <div class="capability-breakdown">
+                                        <div class="capability-name">Combat: <span x-text="capabilities.combat.toFixed(1)"></span></div>
+                                        <template x-if="selectedModel.assignedArmoryItemIds.some(id => {
+                                            const item = getArmoryItemById(id);
+                                            return item && item.type === 'meleeWeapon';
+                                        })">
+                                            <div class="capability-equipment">
+                                                <span class="equipment-header">Including weapons:</span>
+                                                <template x-for="itemId in selectedModel.assignedArmoryItemIds" :key="itemId">
+                                                    <template x-if="(() => {
+                                                        const item = getArmoryItemById(itemId);
+                                                        return item && item.type === 'meleeWeapon';
+                                                    })()">
+                                                        <div class="equipment-item">
+                                                            <span class="equipment-name" x-text="getArmoryItemById(itemId).name + ':'"></span>
+                                                            <span class="equipment-cost" x-text="getEquipmentCost(selectedModel, itemId).toFixed(1)"></span>
+                                                        </div>
+                                                    </template>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                            <!-- End Capability Breakdown Section -->
                         </template>
                         <template x-if="!breakdown">
                             <div>Select a model to see breakdown</div>
@@ -169,7 +225,40 @@
                                             tooltip: {
                                                 callbacks: {
                                                     label: function(context) {
-                                                        return context.parsed.y.toFixed(1) + ' points';
+                                                        const index = context.dataIndex;
+                                                        const capability = ['shooting', 'combat', 'defense', 'movement', 'other'][index];
+                                                        const value = context.parsed.y;
+
+                                                        // Basic tooltip without equipment breakdown
+                                                        let label = `${value.toFixed(1)} points`;
+
+                                                        // Add equipment breakdown for shooting and combat
+                                                        if ((capability === 'shooting' || capability === 'combat') && 
+                                                            selectedModel && 
+                                                            selectedModel.assignedArmoryItemIds && 
+                                                            selectedModel.assignedArmoryItemIds.length > 0) {
+                                                            
+                                                            const equipmentItems = [];
+                                                            let hasRelevantEquipment = false;
+
+                                                            selectedModel.assignedArmoryItemIds.forEach(itemId => {
+                                                                const item = Alpine.evaluate(context._chart.$el, 'getArmoryItemById')(itemId);
+                                                                if (item) {
+                                                                    const relevantType = capability === 'shooting' ? 'rangedWeapon' : 'meleeWeapon';
+                                                                    if (item.type === relevantType) {
+                                                                        hasRelevantEquipment = true;
+                                                                        const cost = Alpine.evaluate(context._chart.$el, 'getEquipmentCost')(selectedModel, itemId);
+                                                                        equipmentItems.push(`${item.name}: ${cost.toFixed(1)}`);
+                                                                    }
+                                                                }
+                                                            });
+
+                                                            if (hasRelevantEquipment) {
+                                                                label = [label, `Includes equipment:`].concat(equipmentItems);
+                                                            }
+                                                        }
+                                                        
+                                                        return label;
                                                     }
                                                 }
                                             }
@@ -246,7 +335,38 @@
                                                         const value = context.parsed;
                                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                                         const percentage = Math.round((value * 100) / total);
-                                                        return `${value.toFixed(1)} points (${percentage}%)`;
+                                                        let label = `${value.toFixed(1)} points (${percentage}%)`;
+
+                                                        // Add equipment breakdown for shooting and combat
+                                                        const index = context.dataIndex;
+                                                        const capability = ['shooting', 'combat', 'defense', 'movement', 'other'][index];
+                                                        
+                                                        if ((capability === 'shooting' || capability === 'combat') && 
+                                                            selectedModel && 
+                                                            selectedModel.assignedArmoryItemIds && 
+                                                            selectedModel.assignedArmoryItemIds.length > 0) {
+                                                            
+                                                            const equipmentItems = [];
+                                                            let hasRelevantEquipment = false;
+
+                                                            selectedModel.assignedArmoryItemIds.forEach(itemId => {
+                                                                const item = Alpine.evaluate(context._chart.$el, 'getArmoryItemById')(itemId);
+                                                                if (item) {
+                                                                    const relevantType = capability === 'shooting' ? 'rangedWeapon' : 'meleeWeapon';
+                                                                    if (item.type === relevantType) {
+                                                                        hasRelevantEquipment = true;
+                                                                        const cost = Alpine.evaluate(context._chart.$el, 'getEquipmentCost')(selectedModel, itemId);
+                                                                        equipmentItems.push(`${item.name}: ${cost.toFixed(1)}`);
+                                                                    }
+                                                                }
+                                                            });
+
+                                                            if (hasRelevantEquipment) {
+                                                                label = [label, `Includes equipment:`].concat(equipmentItems);
+                                                            }
+                                                        }
+                                                        
+                                                        return label;
                                                     }
                                                 }
                                             }
@@ -412,10 +532,17 @@
                             Total Points: <span x-text="getTotalPoints()"></span>
                         </div>
                         
-                        <button @click="showPointConfig = !showPointConfig" class="config-btn">
-                            <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
-                            <span class="arrow-icon" :class="{'arrow-up': !showPointConfig}">▼</span>
-                        </button>
+                        <div class="model-control-buttons">
+                            <!-- 
+                            <button @click="addModel()" class="add-model-btn">
+                                <span>Add New Model</span>
+                            </button>
+                            -->
+                            <button @click="showPointConfig = !showPointConfig" class="config-btn">
+                                <span x-text="showPointConfig ? 'Hide Point Matrix' : 'Show Point Matrix'"></span>
+                                <span class="arrow-icon" :class="{'arrow-up': !showPointConfig}">▼</span>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="scrollable-content">

@@ -1218,14 +1218,32 @@ function appData() {
             const adjustedValues = breakdown.adjustedValues;
             
             // Calculate each capability
-            const shooting = Math.max(0, adjustedValues.ballisticSkill);
-            
-            const combat = Math.max(0, 
+            let shooting = Math.max(0, adjustedValues.ballisticSkill);
+            let combat = Math.max(0, 
                 adjustedValues.weaponSkill + 
                 adjustedValues.strength + 
                 adjustedValues.attacks +
                 adjustedValues.initiative
             );
+            
+            // Add equipment costs to capabilities
+            if (model.assignedArmoryItemIds && Array.isArray(model.assignedArmoryItemIds)) {
+                model.assignedArmoryItemIds.forEach(itemId => {
+                    const item = this.getArmoryItemById(itemId);
+                    if (item) {
+                        // Add ranged weapons costs to shooting capability
+                        if (item.type === 'rangedWeapon') {
+                            const itemCost = this.getEquipmentCost(model, itemId);
+                            shooting += itemCost;
+                        }
+                        // Add melee weapons costs to combat capability
+                        else if (item.type === 'meleeWeapon') {
+                            const itemCost = this.getEquipmentCost(model, itemId);
+                            combat += itemCost;
+                        }
+                    }
+                });
+            }
             
             const defense = Math.max(0, 
                 adjustedValues.toughness + 
@@ -1815,8 +1833,8 @@ function appData() {
             result += `${perspectiveModel.name} vs ${targetModel.name} - Opposed Combat\n`;
             
             // Add model stats summaries
-            result += this.getModelCombatSummary(perspectiveModel) + "\n";
-            result += this.getModelCombatSummary(targetModel) + "\n";
+            result += this.getModelCombatSummary(perspectiveModel, targetModel) + "\n";
+            result += this.getModelCombatSummary(targetModel, perspectiveModel) + "\n";
             
             // If initiatives are equal, note that attacks happen simultaneously
             if (!firstAttacker || !secondAttacker) {
@@ -1891,9 +1909,9 @@ function appData() {
         },
         
         // Helper method to get model combat summary info
-        getModelCombatSummary(model) {
+        getModelCombatSummary(model, targetModel) {
             // Get hit roll needed text
-            const hitRollNeeded = this.getHitRollNeeded(model.weaponSkill);
+            const hitRollNeeded = this.getHitRollNeeded(this.getHitProbability(model.weaponSkill, targetModel.weaponSkill));
             
             // Get weapon info
             let weaponInfo = "";
@@ -1943,23 +1961,21 @@ function appData() {
         },
         
         // Helper method to calculate hit roll needed text (e.g., "3+")
-        getHitRollNeeded(weaponSkill) {
+        getHitRollNeeded(probability) {
             // This is a simplified version - you could expand to include other factors
             // Example: 3+ to hit is common for average WS
-            let rollNeeded;
+            let rollNeeded = "n/a";
             
-            if (weaponSkill >= 6) {
-                rollNeeded = "2+";
-            } else if (weaponSkill === 5) {
-                rollNeeded = "3+";
-            } else if (weaponSkill === 4) {
-                rollNeeded = "3+";
-            } else if (weaponSkill === 3) {
-                rollNeeded = "4+";
-            } else if (weaponSkill <= 2) {
+            if (probability >= .1) {
+                rollNeeded = "6+";
+            } if (probability >= .3) {
                 rollNeeded = "5+";
-            } else {
-                rollNeeded = "4+"; // Default
+            } if (probability >= .5) {
+                rollNeeded = "4+";
+            } if (probability >= .6) {
+                rollNeeded = "3+";
+            } if (probability >= .8) {
+                rollNeeded = "2+";
             }
             
             return rollNeeded;
