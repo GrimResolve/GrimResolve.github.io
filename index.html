@@ -1065,7 +1065,7 @@
                                             </td>
                                             <td>
                                                 <div class="skill-input-wrapper">
-                                                    <input type="number" x-model.number="currentItem.strength" placeholder="e.g., 4" @change="saveArmoryItems()">
+                                                    <input type="number" x-model.number="currentItem.strength" placeholder="e.g., 4" @change="saveArmoryItems()" max="999">
                                                     <div class="spinner-buttons">
                                                         <button class="spinner-button" @click="incrementArmoryStat(currentItem, 'strength')" title="Increase">▲</button>
                                                         <button class="spinner-button" @click="decrementArmoryStat(currentItem, 'strength')" title="Decrease">▼</button>

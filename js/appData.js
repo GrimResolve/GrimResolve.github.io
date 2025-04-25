@@ -281,7 +281,7 @@ function appData() {
         currentStat: 'weights',
         useRelativePoints: true, // Default to relative points
         relativePointsBase: 5, // Default normalization value
-        baseModelCost: 10, // Default base cost for all models
+        baseModelCost: 5, // Default base cost for all models
         
         // -- Removed Scenario Simulation Data --
         // scenarioConfig: {
@@ -305,137 +305,10 @@ function appData() {
         equipmentSearchTerm: '',
 
         // Point value lookup tables for each stat
-        pointValueLookups: {
-            movement: {
-                1: -2,
-                2: -1,
-                3: 0,
-                4: 1,
-                5: 2,
-                6: 3,
-                7: 4,
-                8: 5,
-                9: 6,
-                10: 7,
-                11: 8,
-                12: 9
-            },
-            weaponSkill: {
-                1: 0,
-                2: 1,
-                3: 2,
-                4: 3,
-                5: 5,
-                6: 6,
-                7: 7,
-                8: 8,
-                9: 9,
-                10: 10
-            },
-            ballisticSkill: {
-                '2+': 12,
-                '3+': 9,
-                '4+': 6,
-                '5+': 3,
-                '6+': 1,
-                '-': 0
-            },
-            strength: {
-                1: -1,
-                2: 0,
-                3: 1,
-                4: 2,
-                5: 5,
-                6: 8,
-                7: 11,
-                8: 12,
-                9: 13,
-                10: 14
-            },
-            toughness: {
-                1: -5,
-                2: -2,
-                3: 1,
-                4: 4,
-                5: 7,
-                6: 10,
-                7: 13,
-                8: 16,
-                9: 19,
-                10: 22
-            },
-            wounds: {
-                1: 0,
-                2: 5,
-                3: 10,
-                4: 15,
-                5: 20,
-                6: 25,
-                7: 30,
-                8: 35,
-                9: 40,
-                10: 45
-            },
-            initiative: {
-                1: -3,
-                2: -1,
-                3: 0,
-                4: 1,
-                5: 3,
-                6: 5,
-                7: 7,
-                8: 10,
-                9: 13,
-                10: 16
-            },
-            attacks: {
-                1: 1,
-                2: 4,
-                3: 8,
-                4: 12,
-                5: 16,
-                6: 20,
-                7: 24,
-                8: 28,
-                9: 32,
-                10: 36
-            },
-            leadership: {
-                1: -5,
-                2: -4,
-                3: -3,
-                4: -2,
-                5: -1,
-                6: 0,
-                7: 1,
-                8: 2,
-                9: 3,
-                10: 4
-            },
-            save: {
-                '2+': 16,
-                '3+': 8,
-                '4+': 4,
-                '5+': 2,
-                '6+': 1,
-                '-': 0
-            },
-            invulnSave: {
-                '2+': 100,
-                '3+': 50,
-                '4+': 20,
-                '5+': 10,
-                '6+': 5,
-                '-': 0
-            }
-        },
+        pointValueLookups: null, // Will be initialized in init()
 
         // Add stat multipliers, defaulting to 1.0
-        statMultipliers: {
-            movement: 1.0, weaponSkill: 1.0, ballisticSkill: 1.0, strength: 1.0,
-            toughness: 1.0, wounds: 1.0, initiative: 1.0, attacks: 1.0,
-            leadership: 1.0, save: 1.5, invulnSave: 1.0
-        },
+        statMultipliers: null, // Will be initialized in init()
 
         // Calculate background color based on multiplier value
         getMultiplierColor(value) {
@@ -673,88 +546,88 @@ function appData() {
                 this.armoryItems = [
                     // Ranged Weapons
                     {
-                        id: this.nextArmoryItemId++, name: 'Bolter', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Bolter', type: 'rangedWeapon', description: '', baseCost: 2,
                         range: 24, strength: 4, ap: 5, attacks: 1, weaponType: 'Rapid Fire',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Lasgun', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Lasgun', type: 'rangedWeapon', description: '', baseCost: 1.5,
                         range: 24, strength: 3, ap: 0, attacks: 1, weaponType: 'Rapid Fire',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Bolt Pistol', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Bolt Pistol', type: 'rangedWeapon', description: '', baseCost: 1.5,
                         range: 12, strength: 4, ap: 5, attacks: 1, weaponType: 'Pistol',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Lascannon', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Lascannon', type: 'rangedWeapon', description: '', baseCost: 25,
                         range: 48, strength: 9, ap: 2, attacks: 1, weaponType: 'Heavy',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Plasma Gun', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Plasma Gun', type: 'rangedWeapon', description: '', baseCost: 15,
                         range: 24, strength: 7, ap: 2, attacks: 1, weaponType: 'Rapid Fire', // Gets Hot! not modeled
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                      {
-                        id: this.nextArmoryItemId++, name: 'Plasma Cannon', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Plasma Cannon', type: 'rangedWeapon', description: '', baseCost: 25,
                         range: 36, strength: 7, ap: 2, attacks: 1, weaponType: 'Heavy', // Blast? Gets Hot! not modeled
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Plasma Pistol', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Plasma Pistol', type: 'rangedWeapon', description: '', baseCost: 10,
                         range: 12, strength: 7, ap: 2, attacks: 1, weaponType: 'Pistol', // Gets Hot! not modeled
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Autocannon', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Autocannon', type: 'rangedWeapon', description: '', baseCost: 15,
                         range: 48, strength: 7, ap: 4, attacks: 2, weaponType: 'Heavy',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Missile Launcher (Krak)', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Missile Launcher (Krak)', type: 'rangedWeapon', description: '', baseCost: 10,
                         range: 48, strength: 8, ap: 3, attacks: 1, weaponType: 'Heavy',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                      {
-                        id: this.nextArmoryItemId++, name: 'Missile Launcher (Frag)', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Missile Launcher (Frag)', type: 'rangedWeapon', description: '', baseCost: 10,
                         range: 48, strength: 4, ap: 0, attacks: 1, weaponType: 'Heavy', // Blast?
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                      {
-                        id: this.nextArmoryItemId++, name: 'Meltagun', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Meltagun', type: 'rangedWeapon', description: '', baseCost: 15,
                         range: 12, strength: 8, ap: 1, attacks: 1, weaponType: 'Assault', // Melta rule not modeled
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Storm Bolter', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Storm Bolter', type: 'rangedWeapon', description: '', baseCost: 2.5,
                         range: 24, strength: 4, ap: 5, attacks: 2, weaponType: 'Assault',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Heavy Bolter', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Heavy Bolter', type: 'rangedWeapon', description: '', baseCost: 5,
                         range: 36, strength: 5, ap: 4, attacks: 3, weaponType: 'Heavy',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                      {
-                        id: this.nextArmoryItemId++, name: 'Shuriken Catapult', type: 'rangedWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Shuriken Catapult', type: 'rangedWeapon', description: '', baseCost: 2,
                         range: 12, strength: 4, ap: 5, attacks: 2, weaponType: 'Assault', // Bladestorm rule not modeled
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     // Melee Weapons
                     {
-                        id: this.nextArmoryItemId++, name: 'Chainsword', type: 'meleeWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Chainsword', type: 'meleeWeapon', description: '', baseCost: 1,
                         range: null, strength: null, ap: 0, attacks: null, weaponType: null,
                         meleeStrength: '-', meleeAttacks: '+1', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Power Weapon', type: 'meleeWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Power Weapon', type: 'meleeWeapon', description: '', baseCost: 5,
                         range: null, strength: null, ap: 1, attacks: null, weaponType: null,
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                     {
-                        id: this.nextArmoryItemId++, name: 'Power Fist', type: 'meleeWeapon', description: '', baseCost: 0,
+                        id: this.nextArmoryItemId++, name: 'Power Fist', type: 'meleeWeapon', description: '', baseCost: 10,
                         range: null, strength: null, ap: 1, attacks: null, weaponType: null, // Initiative penalty not modeled
                         meleeStrength: 'x2', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
@@ -1330,16 +1203,16 @@ function appData() {
         statWeightMatrix: {
             // Effect of row stat on column stat
             //           M    WS   BS   S    T    W    I    A    Ld   Sv   Inv
-            movement:   [0,  .1,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
-            weaponSkill:[0,   0, -.2,   0,   0,   0,  .2,  .5,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
+            movement:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
+            weaponSkill:[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
             ballisticSkill:[0,0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-            strength:   [0,   0,   0,   0,   0,   0,   0,  .5,   0,   0,   0],   // Strength is a terminal node
-            toughness:  [0,   0,   0,   0,   0,  .1,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
+            strength:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Strength is a terminal node
+            toughness:  [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
             wounds:     [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Wounds is a terminal node
-            initiative: [0,   0,   0,   0,   0,   0,   0,  .2,   0,   0,   0],   // Initiative affects Attacks
+            initiative: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Initiative affects Attacks
             attacks:    [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Attacks affects Strength
             leadership: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Leadership is a terminal node
-            save:       [0,   0,   0,   0,   0,  .5,   0,   0,   0,   0,   0],   // Save affects Wounds
+            save:       [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Save affects Wounds
             invulnSave: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0]    // Invuln Save affects Wounds
         },
 
@@ -1432,16 +1305,16 @@ function appData() {
             return {
                 // Effect of row stat on column stat
                 //           M    WS   BS   S    T    W    I    A    Ld   Sv   Inv
-                movement:   [0,  .1,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
-                weaponSkill:[0,   0, -.2,   0,   0,   0,  .2,  .5,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
+                movement:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
+                weaponSkill:[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
                 ballisticSkill:[0,0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-                strength:   [0,   0,   0,   0,   0,   0,   0,  .5,   0,   0,   0],   // Strength is a terminal node
-                toughness:  [0,   0,   0,   0,   0,  .1,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
+                strength:   [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Strength is a terminal node
+                toughness:  [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
                 wounds:     [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Wounds is a terminal node
-                initiative: [0,   0,   0,   0,   0,   0,   0,  .2,   0,   0,   0],   // Initiative affects Attacks
+                initiative: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Initiative affects Attacks
                 attacks:    [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Attacks affects Strength
                 leadership: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Leadership is a terminal node
-                save:       [0,   0,   0,   0,   0,  .5,   0,   0,   0,   0,   0],   // Save affects Wounds
+                save:       [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Save affects Wounds
                 invulnSave: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0]    // Invuln Save affects Wounds
             };
         },
@@ -1449,16 +1322,16 @@ function appData() {
         // Get initial/default stat multipliers
         getInitialMultipliers() {
             return {
-                movement: 1.0, 
-                weaponSkill: 1.0, 
-                ballisticSkill: 1.25, 
+                movement: .25, 
+                weaponSkill: .5, 
+                ballisticSkill: .25, 
                 strength: 1.0,
                 toughness: 1.0, 
-                wounds: 1.0, 
-                initiative: 1.0, 
-                attacks: 1.0,
-                leadership: 1.0, 
-                save: 1.5, 
+                wounds: 4.0, 
+                initiative: .25, 
+                attacks: 4,
+                leadership: .25, 
+                save: 1.0, 
                 invulnSave: 1.0
             };
         },
@@ -2490,7 +2363,7 @@ function appData() {
 
         // ++ Add Armory Stat Spinner Functions ++
         incrementArmoryStat(item, statName) {
-            const maxValue = 10; // Assuming a general max value for simplicity
+            const maxValue = statName === 'strength' ? 999 : 10; // Allow much higher values for strength
             if (item[statName] < maxValue) {
                 item[statName]++;
             }
@@ -2599,45 +2472,45 @@ function appData() {
         getDefaultPointValueLookups() {
             return {
                 movement: {
-                    1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3, 7: 4,
-                    8: 5, 9: 6, 10: 7, 11: 8, 12: 9
+                    1: -3, 2: -2, 3: -1, 4: 0, 5: 1, 6: 2, 7: 3,
+                    8: 4, 9: 5, 10: 6, 11: 7, 12: 8
                 },
                 weaponSkill: {
-                    1: 0, 2: 1, 3: 2, 4: 3, 5: 5, 6: 6,
-                    7: 7, 8: 8, 9: 9, 10: 10
+                    1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3,
+                    7: 4, 8: 5, 9: 6, 10: 7
                 },
                 ballisticSkill: {
-                    '2+': 12, '3+': 9, '4+': 6, '5+': 3, '6+': 1, '-': 0
+                    '6+': -2, '5+': -1, '4+': 0, '3+': 1, '2+': 2, '1+': 3, '-': 0
                 },
                 strength: {
-                    1: -1, 2: 0, 3: 1, 4: 2, 5: 5, 6: 8,
-                    7: 11, 8: 12, 9: 13, 10: 14
+                    1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3,
+                    7: 4, 8: 5, 9: 6, 10: 7
                 },
                 toughness: {
-                    1: -5, 2: -2, 3: 1, 4: 4, 5: 7, 6: 10,
-                    7: 13, 8: 16, 9: 19, 10: 22
+                    1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3,
+                    7: 4, 8: 5, 9: 6, 10: 7
                 },
                 wounds: {
-                    1: 0, 2: 5, 3: 10, 4: 15, 5: 20, 6: 25,
-                    7: 30, 8: 35, 9: 40, 10: 45
+                    1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5,
+                    7: 6, 8: 7, 9: 8, 10: 9
                 },
                 initiative: {
-                    1: -3, 2: -1, 3: 0, 4: 1, 5: 3, 6: 5,
-                    7: 7, 8: 10, 9: 13, 10: 16
+                    1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3,
+                    7: 4, 8: 5, 9: 6, 10: 7
                 },
                 attacks: {
-                    1: 1, 2: 4, 3: 8, 4: 12, 5: 16, 6: 20,
-                    7: 24, 8: 28, 9: 32, 10: 36
+                    1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5,
+                    7: 6, 8: 7, 9: 8, 10: 9
                 },
                 leadership: {
-                    1: -5, 2: -4, 3: -3, 4: -2, 5: -1, 6: 0,
-                    7: 1, 8: 2, 9: 3, 10: 4
+                    1: -6, 2: -5, 3: -4, 4: -3, 5: -2, 6: -1, 7: 0,
+                    8: 1, 9: 2, 10: 3
                 },
                 save: {
-                    '2+': 16, '3+': 8, '4+': 4, '5+': 2, '6+': 1, '-': 0
+                    '2+': 12, '3+': 6, '4+': 1.5, '5+': 1, '6+': .5, '7+': 0, '-': 0
                 },
                 invulnSave: {
-                    '2+': 100, '3+': 50, '4+': 20, '5+': 10, '6+': 5, '-': 0
+                    '2+': 12, '3+': 6, '4+': 1.5, '5+': 1, '6+': .5, '7+': 0, '-': 0
                 }
             };
         },
