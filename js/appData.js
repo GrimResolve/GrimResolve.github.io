@@ -87,6 +87,7 @@ function appData() {
         selectedModel: null,
         showPointConfig: true,
         currentStat: 'weights',
+        useRelativePoints: true, // Default to relative points
         
         // -- Removed Scenario Simulation Data --
         // scenarioConfig: {
@@ -237,17 +238,9 @@ function appData() {
 
         // Add stat multipliers, defaulting to 1.0
         statMultipliers: {
-            movement: 1.0,
-            weaponSkill: 1.0,
-            ballisticSkill: 1.0,
-            strength: 1.0,
-            toughness: 1.0,
-            wounds: 1.0,
-            initiative: 1.0,
-            attacks: 1.0,
-            leadership: 1.0,
-            save: 1.0,
-            invulnSave: 1.0
+            movement: 1.0, weaponSkill: 1.0, ballisticSkill: 1.0, strength: 1.0,
+            toughness: 1.0, wounds: 1.0, initiative: 1.0, attacks: 1.0,
+            leadership: 1.0, save: 1.5, invulnSave: 1.0
         },
 
         // Calculate background color based on multiplier value
@@ -315,6 +308,17 @@ function appData() {
                     leadership: 1.0, save: 1.5, invulnSave: 1.0
                 };
             }
+            
+            // Load relative points preference
+            const savedUseRelativePoints = localStorage.getItem('useRelativePoints');
+            if (savedUseRelativePoints !== null) {
+                this.useRelativePoints = JSON.parse(savedUseRelativePoints);
+            }
+            
+            // Watch for changes to useRelativePoints and save to localStorage
+            this.$watch('useRelativePoints', value => {
+                localStorage.setItem('useRelativePoints', JSON.stringify(value));
+            });
 
             // Initialize the first model as selected by default
             if (this.models.length > 0) {
@@ -694,6 +698,12 @@ function appData() {
         },
 
         getRelativePoints(model, index) {
+            // If using absolute points, return the raw points value
+            if (!this.useRelativePoints) {
+                return this.calculatePoints(model).toFixed(2);
+            }
+
+            // For relative points calculation
             if (index === 0) {
                 return (5).toFixed(2); // First model is always 5, ensure consistent formatting
             }

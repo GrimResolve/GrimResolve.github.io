@@ -21,6 +21,12 @@
         </div>
 
         <div class="header-buttons">
+            <div class="points-toggle">
+                <label class="toggle-label">
+                    <input type="checkbox" x-model="useRelativePoints">
+                    <span>Relative Points</span>
+                </label>
+            </div>
             <button class="export-btn" @click="exportModels">Export Models</button>
             <label class="import-btn" for="importInput">Import Models</label>
             <input type="file" id="importInput" accept=".csv" @change="importModels($event)">
