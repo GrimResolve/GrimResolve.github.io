@@ -282,6 +282,8 @@ function appData() {
         useRelativePoints: true, // Default to relative points
         relativePointsBase: 5, // Default normalization value
         baseModelCost: 5, // Default base cost for all models
+        useRogueTraderScaling: false, // Default Rogue Trader scaling to off
+        useSmoothScaling: false, // Default Smooth scaling to off
         
         // -- Removed Scenario Simulation Data --
         // scenarioConfig: {
@@ -416,6 +418,18 @@ function appData() {
                 this.baseModelCost = JSON.parse(savedBaseModelCost);
             }
             
+            // Load Rogue Trader scaling preference
+            const savedUseRogueTraderScaling = localStorage.getItem('useRogueTraderScaling');
+            if (savedUseRogueTraderScaling !== null) {
+                this.useRogueTraderScaling = JSON.parse(savedUseRogueTraderScaling);
+            }
+            
+            // Load Smooth scaling preference
+            const savedUseSmoothScaling = localStorage.getItem('useSmoothScaling');
+            if (savedUseSmoothScaling !== null) {
+                this.useSmoothScaling = JSON.parse(savedUseSmoothScaling);
+            }
+            
             // Watch for changes to useRelativePoints and save to localStorage
             this.$watch('useRelativePoints', value => {
                 localStorage.setItem('useRelativePoints', JSON.stringify(value));
@@ -429,6 +443,20 @@ function appData() {
             // Watch for changes to baseModelCost and save to localStorage
             this.$watch('baseModelCost', value => {
                 localStorage.setItem('baseModelCost', JSON.stringify(value));
+            });
+
+            // Watch for changes to useRogueTraderScaling and save to localStorage
+            this.$watch('useRogueTraderScaling', value => {
+                localStorage.setItem('useRogueTraderScaling', JSON.stringify(value));
+            });
+
+            // Watch for changes to useSmoothScaling and save to localStorage
+            this.$watch('useSmoothScaling', value => {
+                localStorage.setItem('useSmoothScaling', JSON.stringify(value));
+                // If smooth scaling is enabled, disable Rogue Trader scaling
+                if (value && this.useRogueTraderScaling) {
+                    this.useRogueTraderScaling = false;
+                }
             });
 
             // Set up automatic persistence for point configuration
@@ -764,6 +792,19 @@ function appData() {
             const adjustedValues = this.applyWeightMatrix(baseValues, model);
             const modelStatTotal = Object.values(adjustedValues).reduce((a, b) => a + b, 0);
 
+            // Apply scaling if enabled
+            let scaledModelStatTotal = modelStatTotal;
+            if (this.useSmoothScaling) {
+                // Smooth scaling: take 10% of the model's cost and multiply by that number
+                const statBaseCost = this.baseModelCost + modelStatTotal;
+                const scaleFactor = statBaseCost * 0.1; // 10% of the cost
+                scaledModelStatTotal = statBaseCost * scaleFactor - this.baseModelCost;
+            } else if (this.useRogueTraderScaling) {
+                // Rogue Trader scaling (only apply if smooth scaling is off)
+                const statBaseCost = this.baseModelCost + modelStatTotal;
+                scaledModelStatTotal = this.applyRogueTraderScaling(statBaseCost) - this.baseModelCost;
+            }
+
             // Phase 3: Calculate equipment cost
             let equipmentCost = 0;
             const statOrder = this.getStatOrder();
@@ -785,7 +826,22 @@ function appData() {
             }
             
             // Final cost: Base cost + adjusted stat cost + equipment cost
-            return this.baseModelCost + modelStatTotal + equipmentCost;
+            return this.baseModelCost + scaledModelStatTotal + equipmentCost;
+        },
+
+        // Function to apply Rogue Trader scaling
+        applyRogueTraderScaling(points) {
+            if (points <= 10) return points;
+            if (points <= 15) return points * 1.5;
+            if (points <= 20) return points * 2;
+            if (points <= 30) return points * 3;
+            if (points <= 40) return points * 4;
+            if (points <= 50) return points * 5;
+            if (points <= 60) return points * 6;
+            if (points <= 70) return points * 7;
+            if (points <= 80) return points * 8;
+            if (points <= 90) return points * 9;
+            return points * 10; // Cap at 10x for 91+ points
         },
 
         getPointBreakdown(model) {
@@ -839,7 +895,39 @@ function appData() {
             
             // Calculate total cost
             const modelStatTotal = Object.values(adjustedValues).reduce((a, b) => a + b, 0);
-            const total = this.baseModelCost + modelStatTotal + equipmentTotalCost;
+            
+            // Apply scaling if enabled
+            let scaledModelStatTotal = modelStatTotal;
+            let rogueTraderMultiplier = 1;
+            let rogueTraderScaling = false;
+            let smoothScaling = false;
+            let smoothScalingFactor = 1;
+            
+            if (this.useSmoothScaling) {
+                smoothScaling = true;
+                const statBaseCost = this.baseModelCost + modelStatTotal;
+                smoothScalingFactor = statBaseCost * 0.1; // 10% of the cost
+                scaledModelStatTotal = statBaseCost * smoothScalingFactor - this.baseModelCost;
+            } else if (this.useRogueTraderScaling) {
+                rogueTraderScaling = true;
+                const statBaseCost = this.baseModelCost + modelStatTotal;
+                
+                if (statBaseCost <= 10) rogueTraderMultiplier = 1;
+                else if (statBaseCost <= 15) rogueTraderMultiplier = 1.5;
+                else if (statBaseCost <= 20) rogueTraderMultiplier = 2;
+                else if (statBaseCost <= 30) rogueTraderMultiplier = 3;
+                else if (statBaseCost <= 40) rogueTraderMultiplier = 4;
+                else if (statBaseCost <= 50) rogueTraderMultiplier = 5;
+                else if (statBaseCost <= 60) rogueTraderMultiplier = 6;
+                else if (statBaseCost <= 70) rogueTraderMultiplier = 7;
+                else if (statBaseCost <= 80) rogueTraderMultiplier = 8;
+                else if (statBaseCost <= 90) rogueTraderMultiplier = 9;
+                else rogueTraderMultiplier = 10;
+                
+                scaledModelStatTotal = this.applyRogueTraderScaling(statBaseCost) - this.baseModelCost;
+            }
+            
+            const total = this.baseModelCost + scaledModelStatTotal + equipmentTotalCost;
             
             // Return calculation details including equipment
             return {
@@ -847,6 +935,10 @@ function appData() {
                 adjustedValues: {...adjustedValues},
                 equipmentBreakdown: equipmentBreakdown,
                 equipmentTotalCost: equipmentTotalCost,
+                rogueTraderScaling: rogueTraderScaling,
+                rogueTraderMultiplier: rogueTraderMultiplier,
+                smoothScaling: smoothScaling,
+                smoothScalingFactor: smoothScalingFactor,
                 total: total
             };
         },

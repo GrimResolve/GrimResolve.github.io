@@ -76,6 +76,22 @@
                                 </div>
                             </template>
                             
+                            <!-- Rogue Trader Scaling Display -->
+                            <template x-if="breakdown.rogueTraderScaling">
+                                <div class="breakdown-item rogue-trader-item" style="font-weight: bold; color: #d35400;">
+                                    <span>Rogue Trader Scaling:</span>
+                                    <span x-text="breakdown.rogueTraderMultiplier + 'x'"></span>
+                                </div>
+                            </template>
+                            
+                            <!-- Smooth Scaling Display -->
+                            <template x-if="breakdown.smoothScaling">
+                                <div class="breakdown-item smooth-scaling-item" style="font-weight: bold; color: #2980b9;">
+                                    <span>Smooth Scaling:</span>
+                                    <span x-text="breakdown.smoothScalingFactor.toFixed(2) + 'x'"></span>
+                                </div>
+                            </template>
+                            
                             <!-- ++ Add Equipment Breakdown ++ -->
                             <template x-if="breakdown.equipmentTotalCost > 0">
                                 <div class="breakdown-subheader">Equipment Cost:</div>
@@ -664,12 +680,57 @@
                                            class="base-cost-input">
                                 </div>
                                 
+                                <div class="rogue-trader-scaling" style="margin-top: 10px;">
+                                    <label for="useRogueTraderScaling">
+                                        <input type="checkbox" 
+                                               id="useRogueTraderScaling"
+                                               x-model="useRogueTraderScaling"
+                                               @change="if(useRogueTraderScaling) useSmoothScaling = false"> 
+                                        Enable Rogue Trader Scaling
+                                    </label>
+                                    <p x-show="useRogueTraderScaling" style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                                        Rogue Trader Scaling applies a progressive cost multiplier based on the model's base cost:
+                                        <br>• 11-15 points: ×1.5
+                                        <br>• 16-20 points: ×2
+                                        <br>• 21-30 points: ×3
+                                        <br>• 31-40 points: ×4
+                                        <br>• And so on...
+                                    </p>
+                                </div>
+                                
+                                <div class="smooth-scaling" style="margin-top: 10px;">
+                                    <label for="useSmoothScaling">
+                                        <input type="checkbox" 
+                                               id="useSmoothScaling"
+                                               x-model="useSmoothScaling"
+                                               @change="if(useSmoothScaling) useRogueTraderScaling = false"> 
+                                        Enable Smooth Scaling
+                                    </label>
+                                    <p x-show="useSmoothScaling" style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                                        Smooth Scaling multiplies the model's cost by 10% of itself.
+                                        <br>For example, a 20-point model would be multiplied by 2 (20 × 0.1 = 2).
+                                        <br>This creates a smooth exponential curve instead of the step function used by Rogue Trader scaling.
+                                    </p>
+                                </div>
+                                
                                 <div class="base-cost-description">
                                     <p>Every model starts with this many points. Adjust this value to change the general cost level of all models.</p>
                                     <p>Current breakdown for a typical model:</p>
                                     <ul>
                                         <li>Base cost: <span x-text="baseModelCost"></span> points (<span x-text="(baseModelCost / calculatePoints(models[0]) * 100).toFixed(0)"></span>% of total)</li>
                                         <li>Stat costs: <span x-text="(calculatePoints(models[0]) - baseModelCost).toFixed(1)"></span> points</li>
+                                        <template x-if="useRogueTraderScaling">
+                                            <li>
+                                                Rogue Trader multiplier: 
+                                                <span x-text="getPointBreakdown(models[0]).rogueTraderMultiplier + 'x'"></span>
+                                            </li>
+                                        </template>
+                                        <template x-if="useSmoothScaling">
+                                            <li>
+                                                Smooth scaling multiplier: 
+                                                <span x-text="getPointBreakdown(models[0]).smoothScalingFactor.toFixed(2) + 'x'"></span>
+                                            </li>
+                                        </template>
                                         <li>Total: <span x-text="calculatePoints(models[0]).toFixed(1)"></span> points</li>
                                     </ul>
                                 </div>

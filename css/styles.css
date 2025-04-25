@@ -1569,3 +1569,32 @@ button:hover {
 .notification-animate {
     animation: fadeInOut 3s ease-in-out forwards;
 }
+
+.rogue-trader-item {
+    color: #d35400;
+    font-weight: bold;
+}
+
+.smooth-scaling-item {
+    color: #2980b9;
+    font-weight: bold;
+}
+
+.base-cost-editor {
+    margin-bottom: 15px;
+}
+
+.rogue-trader-scaling,
+.smooth-scaling {
+    margin-bottom: 15px;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.rogue-trader-scaling {
+    background-color: rgba(211, 84, 0, 0.1);
+}
+
+.smooth-scaling {
+    background-color: rgba(41, 128, 185, 0.1);
+}
