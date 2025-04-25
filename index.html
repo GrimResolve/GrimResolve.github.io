@@ -60,7 +60,40 @@
                         <div class="breakdown-always-points">
                             Raw Points: <span x-text="selectedModel ? calculatePoints(selectedModel).toFixed(2) : '-'"></span>
                         </div>
+                        <!-- ++ Add Equipment Breakdown ++ -->
+                        <div class="breakdown-subheader" x-show="breakdown && breakdown.equipmentTotalCost > 0">Equipment Cost:</div>
+                        <template x-if="breakdown && breakdown.equipmentTotalCost > 0">
+                            <div>
+                                <template x-for="(itemDetails, itemName) in breakdown.equipmentBreakdown" :key="itemName">
+                                    <div class="breakdown-item equipment-item">
+                                        <span class="equipment-name" x-text="itemName + ':'"></span>
+                                        <span class="equipment-cost" x-text="itemDetails.total.toFixed(2)"></span>
+                                        <!-- Optional: Tooltip for stat contributions -->
+                                        <span class="tooltip" :data-tooltip="'Base: ' + itemDetails.base.toFixed(2) + ' + Stat Adjustments'"> (?)</span>
+                                    </div>
+                                </template>
+                                <div class="breakdown-subtotal">
+                                    Equipment Total: <span x-text="breakdown.equipmentTotalCost.toFixed(2)"></span>
+                                </div>
+                            </div>
+                        </template>
                         
+                        <!-- ++ End Equipment Breakdown ++ -->
+                            <!-- Rogue Trader Scaling Display -->
+                        <template x-if="breakdown.rogueTraderScaling">
+                            <div class="breakdown-item rogue-trader-item" style="font-weight: bold; color: #d35400;">
+                                <span>Rogue Trader Scaling:</span>
+                                <span x-text="breakdown.rogueTraderMultiplier + 'x'"></span>
+                            </div>
+                        </template>
+                        
+                        <!-- Smooth Scaling Display -->
+                        <template x-if="breakdown.smoothScaling">
+                            <div class="breakdown-item smooth-scaling-item" style="font-weight: bold; color: #2980b9;">
+                                <span>Smooth Scaling:</span>
+                                <span x-text="breakdown.smoothScalingFactor.toFixed(2) + 'x'"></span>
+                            </div>
+                        </template>
                         <template x-if="breakdown">
                             <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
                                 <div class="breakdown-item">
@@ -77,41 +110,10 @@
                                 </div>
                             </template>
                             
-                            <!-- Rogue Trader Scaling Display -->
-                            <template x-if="breakdown.rogueTraderScaling">
-                                <div class="breakdown-item rogue-trader-item" style="font-weight: bold; color: #d35400;">
-                                    <span>Rogue Trader Scaling:</span>
-                                    <span x-text="breakdown.rogueTraderMultiplier + 'x'"></span>
-                                </div>
-                            </template>
-                            
-                            <!-- Smooth Scaling Display -->
-                            <template x-if="breakdown.smoothScaling">
-                                <div class="breakdown-item smooth-scaling-item" style="font-weight: bold; color: #2980b9;">
-                                    <span>Smooth Scaling:</span>
-                                    <span x-text="breakdown.smoothScalingFactor.toFixed(2) + 'x'"></span>
-                                </div>
-                            </template>
-                            
-                            <!-- ++ Add Equipment Breakdown ++ -->
-                            <template x-if="breakdown.equipmentTotalCost > 0">
-                                <div class="breakdown-subheader">Equipment Cost:</div>
-                                <template x-for="(itemDetails, itemName) in breakdown.equipmentBreakdown" :key="itemName">
-                                    <div class="breakdown-item equipment-item">
-                                        <span class="equipment-name" x-text="itemName + ':'"></span>
-                                        <span class="equipment-cost" x-text="itemDetails.total.toFixed(1)"></span>
-                                        <!-- Optional: Tooltip for stat contributions -->
-                                        <span class="tooltip" :data-tooltip="'Base: ' + itemDetails.base.toFixed(1) + ' + Stat Adjustments'"> (?)</span>
-                                    </div>
-                                </template>
-                                <div class="breakdown-subtotal">
-                                    Equipment Total: <span x-text="breakdown.equipmentTotalCost.toFixed(1)"></span>
-                                </div>
-                            </template>
-                            <!-- ++ End Equipment Breakdown ++ -->
 
-                            <div class="breakdown-total">
-                                Absolute Total: <span x-text="breakdown.total.toFixed(1)"></span>
+    
+                            <div class="breakdown-total" x-show="breakdown">
+                                Absolute Total: <span x-text="breakdown.total.toFixed(2)"></span>
                             </div>
                             
                             <!-- Capability Breakdown Section -->
