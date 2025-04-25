@@ -290,12 +290,18 @@ function appData() {
             const savedPointValues = localStorage.getItem('pointValueLookups');
             if (savedPointValues) {
                 this.pointValueLookups = JSON.parse(savedPointValues);
+            } else {
+                // Initialize with default point value lookups
+                this.pointValueLookups = this.getDefaultPointValueLookups();
             }
             
             // Load saved weight matrix if it exists
             const savedWeightMatrix = localStorage.getItem('statWeightMatrix');
             if (savedWeightMatrix) {
                 this.statWeightMatrix = JSON.parse(savedWeightMatrix);
+            } else {
+                // Initialize with default weight matrix
+                this.statWeightMatrix = this.getInitialWeightMatrix();
             }
 
             // Load saved stat multipliers if they exist
@@ -303,12 +309,8 @@ function appData() {
             if (savedStatMultipliers) {
                 this.statMultipliers = JSON.parse(savedStatMultipliers);
             } else {
-                // Ensure default multipliers are set if not found in storage
-                this.statMultipliers = {
-                    movement: 1.0, weaponSkill: 1.0, ballisticSkill: 1.25, strength: 1.0,
-                    toughness: 1.0, wounds: 1.0, initiative: 1.0, attacks: 1.0,
-                    leadership: 1.0, save: 1.5, invulnSave: 1.0
-                };
+                // Initialize with default multipliers
+                this.statMultipliers = this.getInitialMultipliers();
             }
             
             // Load relative points preference
@@ -344,10 +346,18 @@ function appData() {
                 localStorage.setItem('baseModelCost', JSON.stringify(value));
             });
 
+            // Set up automatic persistence for point configuration
+            this.setupPointValuePersistence();
+
             // Initialize the first model as selected by default
             if (this.models.length > 0) {
                 this.selectedModel = this.models[0];
             }
+
+            // Show initial welcome notification about persistence
+            setTimeout(() => {
+                this.showNotification('Point configuration automatically saves to your browser\'s local storage.', 5000);
+            }, 1500);
 
             // Ensure all models have the assignedArmoryItemIds property
             this.models.forEach(model => {
@@ -943,6 +953,19 @@ function appData() {
             reader.readAsText(file);
         },
 
+        // Helper method for displaying notifications
+        showNotification(message, duration = 3000) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.className = 'notification notification-animate';
+            document.body.appendChild(notification);
+            
+            // Remove the notification after specified duration
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, duration);
+        },
+
         // Export point values to JSON
         exportPointValues() {
             console.log(this.pointValueLookups);
@@ -964,6 +987,9 @@ function appData() {
             a.setAttribute('download', 'point_values.json');
             a.click();
             URL.revokeObjectURL(url);
+            
+            // Show notification about local persistence
+            this.showNotification('Point values exported and already saved locally.');
         },
 
         // Import point values from JSON
@@ -974,7 +1000,15 @@ function appData() {
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const imported = JSON.parse(e.target.result);
+                    let imported;
+                    // Try to parse the content as JSON
+                    try {
+                        imported = JSON.parse(e.target.result);
+                    } catch (parseError) {
+                        this.showNotification('Invalid JSON format. Please check the file and try again.', 5000);
+                        console.error('JSON parse error:', parseError);
+                        return;
+                    }
                     
                     // Validate point value lookups
                     if (imported.pointValueLookups) {
@@ -993,12 +1027,8 @@ function appData() {
                                 localStorage.setItem('statMultipliers', JSON.stringify(imported.statMultipliers));
                             } else {
                                 // Reset to default if not found in imported file
-                                this.statMultipliers = {
-                                    movement: 1.0, weaponSkill: 1.0, ballisticSkill: 1.0, strength: 1.0,
-                                    toughness: 1.0, wounds: 1.0, initiative: 1.0, attacks: 1.0,
-                                    leadership: 1.0, save: 1.0, invulnSave: 1.0
-                                };
-                                localStorage.removeItem('statMultipliers'); // Remove potentially old value
+                                this.statMultipliers = this.getInitialMultipliers();
+                                localStorage.setItem('statMultipliers', JSON.stringify(this.statMultipliers));
                             }
 
                             // Import weight matrix if available
@@ -1009,15 +1039,15 @@ function appData() {
                                 }
                             }
                             
-                            alert('Point values imported successfully!');
+                            this.showNotification('Point values imported successfully and saved locally!');
                         } else {
-                            alert('Invalid point values file. Missing required stats.');
+                            this.showNotification('Invalid point values file. Missing required stats.', 5000);
                         }
                     } else {
-                        alert('Invalid point values file. Missing pointValueLookups object.');
+                        this.showNotification('Invalid point values file. Missing pointValueLookups object.', 5000);
                     }
                 } catch (error) {
-                    alert('Error importing point values. Make sure it is a valid JSON file.');
+                    this.showNotification('Error importing point values. Make sure it is a valid JSON file.', 5000);
                     console.error('Import error:', error);
                 }
                 event.target.value = '';
@@ -1127,17 +1157,56 @@ function appData() {
         // Save the current weight matrix to localStorage
         saveWeightMatrix() {
             localStorage.setItem('statWeightMatrix', JSON.stringify(this.statWeightMatrix));
-            alert('Weight matrix saved successfully!');
+            
+            // Show notification
+            this.showNotification('Weight matrix saved locally. All changes are automatically persisted.');
+        },
+
+        // Get initial/default weight matrix
+        getInitialWeightMatrix() {
+            return {
+                // Effect of row stat on column stat
+                //           M    WS   BS   S    T    W    I    A    Ld   Sv   Inv
+                movement:   [0,  .1,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Movement affects Initiative and Attacks
+                weaponSkill:[0,   0, -.2,   0,   0,   0,  .2,  .5,   0,   0,   0],   // WS affects Strength, Initiative and Attacks
+                ballisticSkill:[0,0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
+                strength:   [0,   0,   0,   0,   0,   0,   0,  .5,   0,   0,   0],   // Strength is a terminal node
+                toughness:  [0,   0,   0,   0,   0,  .1,   0,   0,   0,   0,   0],   // T affects Wounds and Leadership
+                wounds:     [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Wounds is a terminal node
+                initiative: [0,   0,   0,   0,   0,   0,   0,  .2,   0,   0,   0],   // Initiative affects Attacks
+                attacks:    [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Attacks affects Strength
+                leadership: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],   // Leadership is a terminal node
+                save:       [0,   0,   0,   0,   0,  .5,   0,   0,   0,   0,   0],   // Save affects Wounds
+                invulnSave: [0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0]    // Invuln Save affects Wounds
+            };
+        },
+
+        // Get initial/default stat multipliers
+        getInitialMultipliers() {
+            return {
+                movement: 1.0, 
+                weaponSkill: 1.0, 
+                ballisticSkill: 1.25, 
+                strength: 1.0,
+                toughness: 1.0, 
+                wounds: 1.0, 
+                initiative: 1.0, 
+                attacks: 1.0,
+                leadership: 1.0, 
+                save: 1.5, 
+                invulnSave: 1.0
+            };
         },
 
         // Reset the weight matrix to default values
         resetWeightMatrix() {
             // Implement logic to reset matrix to default values
             console.log('Resetting matrix...');
-            this.statWeightMatrix = this.getInitialWeightMatrix(); // Assuming getInitialWeightMatrix exists
-            this.statMultipliers = this.getInitialMultipliers(); // Assuming getInitialMultipliers exists
+            this.statWeightMatrix = this.getInitialWeightMatrix();
+            this.statMultipliers = this.getInitialMultipliers();
             this.saveWeightMatrix(); // Optionally save immediately
             this.$forceUpdate(); // Force Alpine to re-render
+            this.showNotification('Weight matrix reset to default values and saved locally.');
         },
 
         includeWeightMatrixInExport: false,
@@ -1961,6 +2030,149 @@ function appData() {
             this.saveArmoryItems();
         },
         // ++ End Armory Stat Spinner Functions ++
+
+        // Add watchers for all point value lookup tables
+        setupPointValuePersistence() {
+            // For each stat in pointValueLookups, set up a deep watcher
+            const stats = Object.keys(this.pointValueLookups);
+            stats.forEach(stat => {
+                this.$watch(`pointValueLookups.${stat}`, (newValue) => {
+                    localStorage.setItem('pointValueLookups', JSON.stringify(this.pointValueLookups));
+                }, { deep: true });
+            });
+
+            // Watch stat multipliers
+            this.$watch('statMultipliers', (newValue) => {
+                localStorage.setItem('statMultipliers', JSON.stringify(newValue));
+            }, { deep: true });
+
+            // Save weight matrix when changed
+            this.$watch('statWeightMatrix', (newValue) => {
+                localStorage.setItem('statWeightMatrix', JSON.stringify(newValue));
+            }, { deep: true });
+
+            // Watch base model cost
+            this.$watch('baseModelCost', (newValue) => {
+                localStorage.setItem('baseModelCost', JSON.stringify(newValue));
+            });
+        },
+
+        // Method to clear all locally saved point configuration
+        clearAllSavedConfig() {
+            if (confirm('This will reset all point configuration to default values. Proceed?')) {
+                // Clear point-related localStorage items
+                localStorage.removeItem('pointValueLookups');
+                localStorage.removeItem('statMultipliers');
+                localStorage.removeItem('statWeightMatrix');
+                localStorage.removeItem('baseModelCost');
+                localStorage.removeItem('useRelativePoints');
+                localStorage.removeItem('relativePointsBase');
+                
+                // Reset values to defaults
+                this.pointValueLookups = this.getDefaultPointValueLookups();
+                this.statMultipliers = this.getInitialMultipliers();
+                this.statWeightMatrix = this.getInitialWeightMatrix();
+                this.baseModelCost = 10; // Default value
+                this.useRelativePoints = true; // Default value
+                this.relativePointsBase = 5; // Default value
+                
+                // Force UI update
+                this.$forceUpdate();
+                
+                // Show confirmation
+                this.showNotification('All point configuration data has been reset to defaults', 5000);
+            }
+        },
+        
+        // Method to get default point value lookups
+        getDefaultPointValueLookups() {
+            return {
+                movement: {
+                    1: -2, 2: -1, 3: 0, 4: 1, 5: 2, 6: 3, 7: 4,
+                    8: 5, 9: 6, 10: 7, 11: 8, 12: 9
+                },
+                weaponSkill: {
+                    1: 0, 2: 1, 3: 2, 4: 3, 5: 5, 6: 6,
+                    7: 7, 8: 8, 9: 9, 10: 10
+                },
+                ballisticSkill: {
+                    '2+': 12, '3+': 9, '4+': 6, '5+': 3, '6+': 1, '-': 0
+                },
+                strength: {
+                    1: -1, 2: 0, 3: 1, 4: 2, 5: 5, 6: 8,
+                    7: 11, 8: 12, 9: 13, 10: 14
+                },
+                toughness: {
+                    1: -5, 2: -2, 3: 1, 4: 4, 5: 7, 6: 10,
+                    7: 13, 8: 16, 9: 19, 10: 22
+                },
+                wounds: {
+                    1: 0, 2: 5, 3: 10, 4: 15, 5: 20, 6: 25,
+                    7: 30, 8: 35, 9: 40, 10: 45
+                },
+                initiative: {
+                    1: -3, 2: -1, 3: 0, 4: 1, 5: 3, 6: 5,
+                    7: 7, 8: 10, 9: 13, 10: 16
+                },
+                attacks: {
+                    1: 1, 2: 4, 3: 8, 4: 12, 5: 16, 6: 20,
+                    7: 24, 8: 28, 9: 32, 10: 36
+                },
+                leadership: {
+                    1: -5, 2: -4, 3: -3, 4: -2, 5: -1, 6: 0,
+                    7: 1, 8: 2, 9: 3, 10: 4
+                },
+                save: {
+                    '2+': 16, '3+': 8, '4+': 4, '5+': 2, '6+': 1, '-': 0
+                },
+                invulnSave: {
+                    '2+': 100, '3+': 50, '4+': 20, '5+': 10, '6+': 5, '-': 0
+                }
+            };
+        },
+        
+        saveArmoryItems() {
+            try {
+                const armoryJson = JSON.stringify(this.armoryItems);
+                localStorage.setItem('grimResolverArmoryItems', armoryJson);
+                this.showNotification('Armory items saved');
+            } catch (error) {
+                console.error('Error saving armory items:', error);
+                this.showNotification('Error saving armory items', 5000);
+            }
+        },
+        
+        addArmoryItem() {
+            // Generate a unique ID for the new item
+            const newItemId = Date.now().toString();
+            
+            // Create default empty array for statWeights if armoryItems doesn't exist yet
+            if (!this.armoryItems) {
+                this.armoryItems = [];
+            }
+            
+            // Create a new item with default values
+            const newItem = {
+                id: newItemId,
+                name: "New Item",
+                type: "wargear",
+                description: "",
+                baseCost: 0,
+                // Default stat weights (corresponding to the 9 stats in the order they appear)
+                statWeights: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+            };
+            
+            // Add the new item to the array
+            this.armoryItems.push(newItem);
+            
+            // Set the new item as selected
+            this.selectedArmoryItemId = newItemId;
+            
+            // Save the updated items
+            this.saveArmoryItems();
+            
+            return newItemId;
+        },
 
     }; // END OF appData return object
 } 

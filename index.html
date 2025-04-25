@@ -421,13 +421,18 @@
                     <div class="scrollable-content">
                         <div x-show="showPointConfig" class="point-config-tables">
                             <div class="point-config-header">
-                                <h3>Point Value Configuration</h3>
+                                <h3>Point Value Configuration <small style="font-weight: normal; font-size: 0.8em; color: #888;">(changes automatically saved)</small></h3>
                                 <div class="point-config-actions">
                                     <button @click="exportPointValues" class="export-btn">Export Configuration</button>
                                     <label class="import-btn" for="importPointValues">Import Configuration</label>
                                     <input type="file" id="importPointValues" @change="importPointValues($event)" accept=".json">
+                                    <button @click="clearAllSavedConfig" class="reset-btn" title="Reset all point configuration to defaults">Reset All</button>
                                 </div>
                             </div>
+                            <p class="persistence-info" style="font-size: 0.85em; color: #666; margin-bottom: 15px;">
+                                All changes to point values, multipliers, and weights are automatically saved to your browser's local storage. 
+                                Export to backup or share configurations, import to restore from backup, or reset to default values.
+                            </p>
 
                             <div class="stat-nav">
                                 <div class="stat-nav-label">Current Stat:</div>
@@ -550,7 +555,7 @@
                                 
                                 <div class="weight-matrix-actions">
                                     <button @click="saveWeightMatrix" class="save-weights-btn">Save Weight Matrix</button>
-                                    <button @click="resetWeightMatrix" class="reset-weights-btn">Reset to Default</button>
+                                    <button @click="resetWeightMatrix" class="reset-weights-btn">Reset Matrix</button>
                                     <button @click="includeWeightMatrixInExport = !includeWeightMatrixInExport" 
                                             class="toggle-weights-btn"
                                             x-bind:class="{'active': includeWeightMatrixInExport}">

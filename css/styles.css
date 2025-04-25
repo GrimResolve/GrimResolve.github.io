@@ -1450,3 +1450,29 @@ button:hover {
 
 .action-cell {
 }
+
+/* Notification system */
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px;
+    background-color: rgba(50, 150, 50, 0.9);
+    color: white;
+    border-radius: 5px;
+    z-index: 10000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    max-width: 300px;
+}
+
+/* Animation for notification */
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+
+.notification-animate {
+    animation: fadeInOut 3s ease-in-out forwards;
+}
