@@ -1221,90 +1221,98 @@ function appData() {
 
         // Export point values to JSON
         exportPointValues() {
-            console.log(this.pointValueLookups);
-            const dataToExport = {
+            const exportData = {
                 pointValueLookups: this.pointValueLookups,
-                statMultipliers: this.statMultipliers // Include multipliers in export
+                statMultipliers: this.statMultipliers,
+                statWeightMatrix: this.statWeightMatrix,
+                includeWeightMatrix: this.includeWeightMatrixInExport,
+                baseModelCost: this.baseModelCost,
+                useRogueTraderScaling: this.useRogueTraderScaling,
+                useSmoothScaling: this.useSmoothScaling
             };
             
-            // Include weight matrix if option is enabled
-            if (this.includeWeightMatrixInExport) {
-                dataToExport.statWeightMatrix = this.statWeightMatrix;
+            // Check if weightMatrix should be excluded
+            if (!this.includeWeightMatrixInExport) {
+                delete exportData.statWeightMatrix;
             }
             
-            const data = JSON.stringify(dataToExport, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'point_values.json');
-            a.click();
-            URL.revokeObjectURL(url);
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
             
-            // Show notification about local persistence
-            this.showNotification('Point values exported and already saved locally.');
+            const exportFileDefaultName = 'point_configuration.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            this.showNotification('Point configuration exported successfully!');
         },
 
         // Import point values from JSON
         importPointValues(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const fileInput = event.target;
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                return;
+            }
             
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    let imported;
-                    // Try to parse the content as JSON
-                    try {
-                        imported = JSON.parse(e.target.result);
-                    } catch (parseError) {
-                        this.showNotification('Invalid JSON format. Please check the file and try again.', 5000);
-                        console.error('JSON parse error:', parseError);
-                        return;
+                    const jsonData = JSON.parse(e.target.result);
+                    
+                    // Validate import data
+                    if (!jsonData.pointValueLookups || !jsonData.statMultipliers) {
+                        throw new Error('Invalid point configuration file');
                     }
                     
-                    // Validate point value lookups
-                    if (imported.pointValueLookups) {
-                        const requiredStats = [
-                            'movement', 'weaponSkill', 'ballisticSkill', 'strength',
-                            'toughness', 'wounds', 'initiative', 'attacks', 'leadership', 'save', 'invulnSave'
-                        ];
-                        
-                        if (requiredStats.every(stat => imported.pointValueLookups[stat])) {
-                            this.pointValueLookups = imported.pointValueLookups;
-                            localStorage.setItem('pointValueLookups', JSON.stringify(imported.pointValueLookups));
-                            
-                            // Import stat multipliers if available
-                            if (imported.statMultipliers) {
-                                this.statMultipliers = imported.statMultipliers;
-                                localStorage.setItem('statMultipliers', JSON.stringify(imported.statMultipliers));
-                            } else {
-                                // Reset to default if not found in imported file
-                                this.statMultipliers = this.getInitialMultipliers();
-                                localStorage.setItem('statMultipliers', JSON.stringify(this.statMultipliers));
-                            }
-
-                            // Import weight matrix if available
-                            if (imported.statWeightMatrix) {
-                                if (confirm('The imported file contains a weight matrix. Do you want to import it as well?')) {
-                                    this.statWeightMatrix = imported.statWeightMatrix;
-                                    localStorage.setItem('statWeightMatrix', JSON.stringify(imported.statWeightMatrix));
-                                }
-                            }
-                            
-                            this.showNotification('Point values imported successfully and saved locally!');
-                        } else {
-                            this.showNotification('Invalid point values file. Missing required stats.', 5000);
-                        }
-                    } else {
-                        this.showNotification('Invalid point values file. Missing pointValueLookups object.', 5000);
+                    // Apply imported configuration
+                    if (jsonData.pointValueLookups) {
+                        this.pointValueLookups = jsonData.pointValueLookups;
                     }
+                    
+                    if (jsonData.statMultipliers) {
+                        this.statMultipliers = jsonData.statMultipliers;
+                    }
+                    
+                    if (jsonData.statWeightMatrix) {
+                        this.statWeightMatrix = jsonData.statWeightMatrix;
+                    }
+                    
+                    // Import baseModelCost if present
+                    if (jsonData.baseModelCost !== undefined) {
+                        this.baseModelCost = jsonData.baseModelCost;
+                    }
+                    
+                    // Import scaling options if present
+                    if (jsonData.useRogueTraderScaling !== undefined) {
+                        this.useRogueTraderScaling = jsonData.useRogueTraderScaling;
+                    }
+                    
+                    if (jsonData.useSmoothScaling !== undefined) {
+                        this.useSmoothScaling = jsonData.useSmoothScaling;
+                    }
+                    
+                    // Save to localStorage
+                    localStorage.setItem('pointValueLookups', JSON.stringify(this.pointValueLookups));
+                    localStorage.setItem('statMultipliers', JSON.stringify(this.statMultipliers));
+                    localStorage.setItem('statWeightMatrix', JSON.stringify(this.statWeightMatrix));
+                    localStorage.setItem('baseModelCost', this.baseModelCost);
+                    localStorage.setItem('useRogueTraderScaling', this.useRogueTraderScaling);
+                    localStorage.setItem('useSmoothScaling', this.useSmoothScaling);
+                    
+                    this.showNotification('Point configuration imported successfully!');
                 } catch (error) {
-                    this.showNotification('Error importing point values. Make sure it is a valid JSON file.', 5000);
-                    console.error('Import error:', error);
+                    console.error('Error importing point configuration:', error);
+                    this.showNotification('Error importing point configuration file');
                 }
-                event.target.value = '';
+                
+                // Reset file input
+                fileInput.value = null;
             };
+            
             reader.readAsText(file);
         },
 
