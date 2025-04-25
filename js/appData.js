@@ -295,6 +295,26 @@ function appData() {
                 this.pointValueLookups = this.getDefaultPointValueLookups();
             }
             
+            // Load saved models if they exist
+            const savedModels = localStorage.getItem('grimResolverModels');
+            if (savedModels) {
+                try {
+                    this.models = JSON.parse(savedModels);
+                    
+                    // Find the highest model ID to ensure new models get unique IDs
+                    if (this.models.length > 0) {
+                        this.nextModelId = Math.max(...this.models.map(model => model.id)) + 1;
+                        // Set the first model as selected
+                        this.selectedModel = this.models[0];
+                    }
+                    
+                    console.log('Models loaded successfully.');
+                } catch (e) {
+                    console.error('Error parsing saved models:', e);
+                    // If there's an error, we'll keep the default models
+                }
+            }
+            
             // Load saved weight matrix if it exists
             const savedWeightMatrix = localStorage.getItem('statWeightMatrix');
             if (savedWeightMatrix) {
@@ -356,7 +376,7 @@ function appData() {
 
             // Show initial welcome notification about persistence
             setTimeout(() => {
-                this.showNotification('Point configuration automatically saves to your browser\'s local storage.', 5000);
+                this.showNotification('Point configuration and models automatically save to your browser\'s local storage.', 5000);
             }, 1500);
 
             // Ensure all models have the assignedArmoryItemIds property
@@ -582,6 +602,7 @@ function appData() {
             };
             this.models.push(newModel);
             this.selectedModel = newModel; // Select the newly added model
+            this.saveModels(true); // Save after adding model and show notification
         },
         
         duplicateModel(index) {
@@ -604,6 +625,7 @@ function appData() {
             };
             this.models.splice(index + 1, 0, newModel);
             this.selectedModel = newModel; // Select the newly duplicated model
+            this.saveModels(true); // Save after duplicating model and show notification
         },
         
         removeModel(index) {
@@ -620,6 +642,8 @@ function appData() {
                     if (isSelectedModel) {
                         this.selectedModel = this.models[0];
                     }
+                    
+                    this.saveModels(true); // Save after removing model and show notification
                 }
             }
         },
@@ -826,43 +850,56 @@ function appData() {
             }
         },        // Function to increment numeric skill value
         incrementNumeric(model, prop) {
-            const maxValue = prop === 'movement' ? 12 : 10;  // Movement caps at 12, others at 10
-            if (model[prop] < maxValue) {
+            if (model && prop) {
                 model[prop]++;
+                this.saveModels(); // Save after change
             }
         },
         // Function to decrement numeric skill value
         decrementNumeric(model, prop) {
-            if (model[prop] > 1) {  // Floor at 1
+            if (model && prop && model[prop] > 1) {
                 model[prop]--;
+                this.saveModels(); // Save after change
             }
         },
         // Function to increment skill value with plus sign
         incrementSkill(model, prop) {
-            if (model[prop] === '6+') {
-                model[prop] = '-';  // When reaching beyond 6+, use dash
-                return;
-            }
+            if (!model || !prop) return;
             
-            if (model[prop] === '-') {
-                return;  // Dash is the maximum, can't increment further
-            }
+            const skillValues = {
+                ballisticSkill: ['6+', '5+', '4+', '3+', '2+', '-'],
+                save: ['6+', '5+', '4+', '3+', '2+', '-'],
+                invulnSave: ['6+', '5+', '4+', '3+', '2+', '-']
+            };
             
-            const value = parseInt(model[prop]);
-            if (!isNaN(value) && value < 6) {  // Cap at 6+
-                model[prop] = (value + 1) + '+';
+            if (skillValues[prop]) {
+                const values = skillValues[prop];
+                const currentIndex = values.indexOf(model[prop]);
+                
+                if (currentIndex !== -1 && currentIndex < values.length - 1) {
+                    model[prop] = values[currentIndex + 1];
+                    this.saveModels(); // Save after change
+                }
             }
         },
         // Function to decrement skill value with plus sign
         decrementSkill(model, prop) {
-            if (model[prop] === '-') {
-                model[prop] = '6+';  // Go back to 6+ when decrementing from dash
-                return;
-            }
+            if (!model || !prop) return;
             
-            const value = parseInt(model[prop]);
-            if (!isNaN(value) && value > 2) {  // Floor at 2+
-                model[prop] = (value - 1) + '+';
+            const skillValues = {
+                ballisticSkill: ['6+', '5+', '4+', '3+', '2+', '-'],
+                save: ['6+', '5+', '4+', '3+', '2+', '-'],
+                invulnSave: ['6+', '5+', '4+', '3+', '2+', '-']
+            };
+            
+            if (skillValues[prop]) {
+                const values = skillValues[prop];
+                const currentIndex = values.indexOf(model[prop]);
+                
+                if (currentIndex > 0) {
+                    model[prop] = values[currentIndex - 1];
+                    this.saveModels(); // Save after change
+                }
             }
         },
         
@@ -942,6 +979,11 @@ function appData() {
                     if (this.models.length > 0) {
                         this.selectedModel = this.models[0];
                     }
+                    
+                    // Save the imported models
+                    this.saveModels(true);
+                    
+                    this.showNotification('Models imported and saved locally');
                 } catch (error) {
                     alert('Error importing the file. Make sure it is a valid CSV.');
                     console.error('Import error:', error);
@@ -2116,27 +2158,27 @@ function appData() {
 
         // --- Add Direct Equipment Assignment Functions ---
         addEquipmentToModel(itemId) {
-            if (!this.selectedModel) return;
-            // Ensure assignedArmoryItemIds exists
-            if (!this.selectedModel.assignedArmoryItemIds) {
-                this.selectedModel.assignedArmoryItemIds = [];
-            }
-            // Add item if not already present
-            if (!this.selectedModel.assignedArmoryItemIds.includes(itemId)) {
-                this.selectedModel.assignedArmoryItemIds.push(itemId);
-                this.equipmentSearchTerm = ''; // Clear search after adding
-                // TODO: Optionally save models to localStorage
+            if (this.selectedModel && itemId) {
+                // Initialize array if it doesn't exist
+                if (!this.selectedModel.assignedArmoryItemIds) {
+                    this.selectedModel.assignedArmoryItemIds = [];
+                }
+                
+                // Only add if not already present
+                if (!this.selectedModel.assignedArmoryItemIds.includes(itemId)) {
+                    this.selectedModel.assignedArmoryItemIds.push(itemId);
+                    this.saveModels(); // Save after adding equipment
+                }
             }
         },
 
         removeEquipmentFromModel(itemId) {
-            if (!this.selectedModel || !this.selectedModel.assignedArmoryItemIds) return;
-            
-            // Use indexOf which works for both strings and numbers
-            const index = this.selectedModel.assignedArmoryItemIds.indexOf(itemId);
-            if (index > -1) {
-                this.selectedModel.assignedArmoryItemIds.splice(index, 1);
-                // TODO: Optionally save models to localStorage
+            if (this.selectedModel && this.selectedModel.assignedArmoryItemIds && itemId) {
+                const index = this.selectedModel.assignedArmoryItemIds.indexOf(itemId);
+                if (index !== -1) {
+                    this.selectedModel.assignedArmoryItemIds.splice(index, 1);
+                    this.saveModels(); // Save after removing equipment
+                }
             }
         },
 
@@ -2295,6 +2337,11 @@ function appData() {
             this.$watch('baseModelCost', (newValue) => {
                 localStorage.setItem('baseModelCost', JSON.stringify(newValue));
             });
+
+            // Watch models for changes and save them
+            this.$watch('models', (newValue) => {
+                this.saveModels();
+            }, { deep: true });
         },
 
         // Method to clear all locally saved point configuration
@@ -2307,6 +2354,7 @@ function appData() {
                 localStorage.removeItem('baseModelCost');
                 localStorage.removeItem('useRelativePoints');
                 localStorage.removeItem('relativePointsBase');
+                localStorage.removeItem('grimResolverModels'); // Also clear saved models
                 
                 // Reset values to defaults
                 this.pointValueLookups = this.getDefaultPointValueLookups();
@@ -2412,6 +2460,20 @@ function appData() {
             this.saveArmoryItems();
             
             return newItemId;
+        },
+
+        // Helper method to save models to localStorage
+        saveModels(showNotification = false) {
+            try {
+                localStorage.setItem('grimResolverModels', JSON.stringify(this.models));
+                console.log('Models saved successfully.');
+                if (showNotification) {
+                    this.showNotification('Models saved to local storage');
+                }
+            } catch (e) {
+                console.error('Error saving models:', e);
+                this.showNotification('Error saving models to local storage', 5000);
+            }
         },
 
     }; // END OF appData return object
