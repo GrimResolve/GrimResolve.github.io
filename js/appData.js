@@ -89,6 +89,7 @@ function appData() {
         currentStat: 'weights',
         useRelativePoints: true, // Default to relative points
         relativePointsBase: 5, // Default normalization value
+        baseModelCost: 10, // Default base cost for all models
         
         // -- Removed Scenario Simulation Data --
         // scenarioConfig: {
@@ -322,6 +323,12 @@ function appData() {
                 this.relativePointsBase = JSON.parse(savedRelativePointsBase);
             }
             
+            // Load base model cost
+            const savedBaseModelCost = localStorage.getItem('baseModelCost');
+            if (savedBaseModelCost !== null) {
+                this.baseModelCost = JSON.parse(savedBaseModelCost);
+            }
+            
             // Watch for changes to useRelativePoints and save to localStorage
             this.$watch('useRelativePoints', value => {
                 localStorage.setItem('useRelativePoints', JSON.stringify(value));
@@ -330,6 +337,11 @@ function appData() {
             // Watch for changes to relativePointsBase and save to localStorage
             this.$watch('relativePointsBase', value => {
                 localStorage.setItem('relativePointsBase', JSON.stringify(value));
+            });
+            
+            // Watch for changes to baseModelCost and save to localStorage
+            this.$watch('baseModelCost', value => {
+                localStorage.setItem('baseModelCost', JSON.stringify(value));
             });
 
             // Initialize the first model as selected by default
@@ -642,8 +654,8 @@ function appData() {
                 });
             }
             
-            // Final cost: Base 10 + adjusted stat cost + equipment cost
-            return 10 + modelStatTotal + equipmentCost;
+            // Final cost: Base cost + adjusted stat cost + equipment cost
+            return this.baseModelCost + modelStatTotal + equipmentCost;
         },
 
         getPointBreakdown(model) {
@@ -697,7 +709,7 @@ function appData() {
             
             // Calculate total cost
             const modelStatTotal = Object.values(adjustedValues).reduce((a, b) => a + b, 0);
-            const total = 10 + modelStatTotal + equipmentTotalCost;
+            const total = this.baseModelCost + modelStatTotal + equipmentTotalCost;
             
             // Return calculation details including equipment
             return {
@@ -1014,6 +1026,9 @@ function appData() {
         },
 
         formatStatName(stat) {
+            if (stat === 'base') {
+                return 'Base Cost';
+            }
             return stat.charAt(0).toUpperCase() + stat.slice(1).replace(/([A-Z])/g, ' $1');
         },
 

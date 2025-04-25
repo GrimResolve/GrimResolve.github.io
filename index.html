@@ -54,7 +54,7 @@
                     <!-- Point Breakdown Section -->
                     <div class="point-breakdown" x-show="selectedModel !== null">
                         <div class="breakdown-header">Absolute Point Calculation:</div>
-                        <div class="breakdown-base">Base Cost: 10</div>
+                        <div class="breakdown-base">Base Cost: <span x-text="baseModelCost"></span></div>
                         
                         <!-- Always show the raw points value when a model is selected -->
                         <div class="breakdown-always-points">
@@ -434,6 +434,10 @@
                                 <div class="stat-buttons">
                                     <button 
                                         class="stat-button" 
+                                        x-on:click="currentStat = 'base'"
+                                        x-bind:class="{'active': currentStat === 'base'}">Base</button>
+                                    <button 
+                                        class="stat-button" 
                                         x-on:click="currentStat = 'movement'"
                                         x-bind:class="{'active': currentStat === 'movement'}">M</button>
                                     <button 
@@ -479,7 +483,7 @@
                                 </div>
                             </div>
 
-                            <div class="single-stat-config" x-show="currentStat !== 'weights'">
+                            <div class="single-stat-config" x-show="currentStat !== 'weights' && currentStat !== 'base'">
                                 <h4>
                                     <span x-text="formatStatName(currentStat)"></span>
                                     <span> Multiplier: </span>
@@ -511,6 +515,32 @@
                                         </tr>
                                     </template>
                                 </table>
+                            </div>
+                            
+                            <!-- Base Cost Editor -->
+                            <div class="base-cost-config" x-show="currentStat === 'base'">
+                                <h4>Base Model Cost</h4>
+                                <p class="base-cost-info">This is the starting cost for all models before stat costs are added.</p>
+                                
+                                <div class="base-cost-editor">
+                                    <label for="baseModelCost">Base Cost:</label>
+                                    <input type="number" 
+                                           id="baseModelCost"
+                                           x-model.number="baseModelCost" 
+                                           min="0" 
+                                           step="0.5" 
+                                           class="base-cost-input">
+                                </div>
+                                
+                                <div class="base-cost-description">
+                                    <p>Every model starts with this many points. Adjust this value to change the general cost level of all models.</p>
+                                    <p>Current breakdown for a typical model:</p>
+                                    <ul>
+                                        <li>Base cost: <span x-text="baseModelCost"></span> points (<span x-text="(baseModelCost / calculatePoints(models[0]) * 100).toFixed(0)"></span>% of total)</li>
+                                        <li>Stat costs: <span x-text="(calculatePoints(models[0]) - baseModelCost).toFixed(1)"></span> points</li>
+                                        <li>Total: <span x-text="calculatePoints(models[0]).toFixed(1)"></span> points</li>
+                                    </ul>
+                                </div>
                             </div>
 
                             <!-- Weight Matrix Editor -->

@@ -1379,3 +1379,74 @@ button:hover {
 .armory-list-pane ul {
     font-weight: bold;
 }
+
+/* Base Cost Editor styles */
+.base-cost-config {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f7f7f7;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.base-cost-config h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.base-cost-info {
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.base-cost-editor {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.base-cost-editor label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.base-cost-input {
+    width: 80px;
+    padding: 8px;
+    font-size: 1.1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.base-cost-description {
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.base-cost-description p {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.base-cost-description ul {
+    padding-left: 20px;
+}
+
+.base-cost-description li {
+    margin-bottom: 5px;
+}
+
+.action-cell {
+}
