@@ -1295,18 +1295,30 @@ function appData() {
 
         // --- Scenario Management Functions ---
         addScenario() {
+            // Generate a unique ID for the new scenario
+            const newId = Date.now().toString();
+            
+            // Create a new scenario with default values based on type
             const newScenario = {
-                id: 'scenario_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7), // Reasonably unique ID
-                name: 'New Scenario',
-                type: 'meleeAttack', // Default type
-                targetModelIds: [], // Default empty targets
-                attackingModelIds: [], // Initialize attacker list
-                range: 12 // Default range for new scenarios
-                // Add other default fields as needed for other types later
-                // weaponProfile: { name: '', shots: '', s: '', ap: '', d: '' }
+                id: newId,
+                name: "New Scenario",
+                type: "meleeAttack", // Default type
+                targetModelIds: [], // For multi-target scenarios (melee/ranged attack)
+                targetModelId: "", // For single target scenarios (opposed combat)
+                attackingModelIds: [], // For defense scenarios
+                range: 12 // Default range for ranged scenarios
             };
+            
+            // Add to scenarios array
             this.scenarios.push(newScenario);
-            this.selectedScenarioId = newScenario.id; // Select the new scenario for editing
+            
+            // Select the new scenario
+            this.selectedScenarioId = newId;
+            
+            // Save to storage
+            this.saveScenarios();
+            
+            return newId;
         },
 
         deleteScenario() {
@@ -1489,8 +1501,9 @@ function appData() {
 
         // --- Main Scenario Calculation Dispatcher ---
         getScenarioResults(scenario, perspectiveModel) {
-            if (!scenario || !perspectiveModel) return "Invalid scenario or perspective model.";
-
+            if (!scenario || !perspectiveModel) return "No data available.";
+            
+            // Handle based on scenario type
             switch (scenario.type) {
                 case 'meleeAttack':
                     return this.calculateMeleeAttackOutcome(scenario, perspectiveModel);
@@ -1498,8 +1511,10 @@ function appData() {
                     return this.calculateRangedAttackOutcome(scenario, perspectiveModel);
                 case 'rangedDefense':
                     return this.calculateRangedDefenseOutcome(scenario, perspectiveModel);
+                case 'opposedCombat':
+                    return this.calculateOpposedCombatOutcome(scenario, perspectiveModel);
                 default:
-                    return `Scenario type '${scenario.type}' not implemented yet.`;
+                    return `Scenario type ${scenario.type} not yet implemented.`;
             }
         },
 
@@ -1526,62 +1541,31 @@ function appData() {
                     continue;
                 }
 
-                // Determine effective combat stats based on assigned melee weapon
-                let effectiveS = attacker.strength;
-                let effectiveA = attacker.attacks;
-                let effectiveAP = 0; // Default AP modifier (no effect on save)
-                let weaponUsedName = 'Base Stats';
-                let weaponAPDisplay = '-'; // For display
-
-                const assignedIds = attacker.assignedArmoryItemIds || [];
-                let firstMeleeWeapon = null;
-                for (const itemId of assignedIds) {
-                    // Use the versatile lookup function
-                    const item = this.getArmoryItemById(itemId); 
-                    if (item && item.type === 'meleeWeapon') {
-                        firstMeleeWeapon = item;
-                        break; // Use the first one found
-                    }
-                }
-
-                if (firstMeleeWeapon) {
-                    weaponUsedName = firstMeleeWeapon.name;
-                    effectiveS = this.applyStrengthModifier(attacker.strength, firstMeleeWeapon.meleeStrength);
-                    effectiveA = this.applyAttacksModifier(attacker.attacks, firstMeleeWeapon.meleeAttacks);
-                    // Get AP value from weapon, treat null/undefined as 0
-                    effectiveAP = parseInt(firstMeleeWeapon.ap, 10) || 0; 
-                    // Handle AP display for '-'
-                    weaponAPDisplay = (effectiveAP === 0) ? '-' : effectiveAP;
-                }
-
-                // Calculate probabilities using effective stats
-                const pHit = this.getHitProbability(attacker.weaponSkill, target.weaponSkill);
-                const pWound = this.getWoundProbability(effectiveS, target.toughness);
-                const pFailSave = this.getFailSaveProbability(target.save, target.invulnSave, effectiveAP);
-
-                // Calculate expected wounds
-                const expectedWounds = effectiveA * pHit * pWound * pFailSave;
+                // Use the calculateSingleAttack helper with no penalty
+                const attackResult = this.calculateSingleAttack(attacker, target, 0);
+                const attackData = attackResult.data;
+                
+                // Get the weapon details
+                const meleeWeapon = attackData.weapon;
+                const weaponUsedName = meleeWeapon ? meleeWeapon.name : 'Base Stats';
+                const effectiveS = attackData.effectiveStrength;
+                const effectiveA = attackData.attacks;
+                const weaponAPDisplay = (attackData.apValue === 0) ? '-' : attackData.apValue;
 
                 // Calculate efficiency
-                const attackerPoints = this.calculatePoints(attacker); // Use the absolute points calculation
-                const efficiency = attackerPoints > 0 ? expectedWounds / attackerPoints : 0; 
-                const saveChance = (1.0 - pFailSave);
+                const attackerPoints = this.calculatePoints(attacker);
+                const efficiency = attackerPoints > 0 ? attackData.expectedUnsavedWounds / attackerPoints : 0;
+                const saveChance = (1.0 - attackData.failSaveProb);
 
                 // Format result for this target
                 results.push(
                     `  vs ${target.name || '(Unnamed)'} (T${target.toughness}, ${target.save}/${target.invulnSave}):
-` + // Added Target stats for context
-                    `    Weapon: ${weaponUsedName} (S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})
-` + // Show effective stats used
-                    `    Hits: ${(effectiveA * pHit).toFixed(2)} (${(pHit * 100).toFixed(0)}%)
-` + // Used effectiveA
-                    `    Wounds: ${(effectiveA * pHit * pWound).toFixed(2)} (${(pWound * 100).toFixed(0)}%)
-` + // Used effectiveA
-                    `    Unsaved: ${expectedWounds.toFixed(2)} (Save: ${(saveChance * 100).toFixed(0)}%)
-` + // Used pFailSave which includes AP
-                    `    Wounds/Point: ${efficiency.toFixed(4)}
-` + // Used calculated efficiency
-                    `    Efficiency: ${(1000 * efficiency).toFixed(2)}`
+    Weapon: ${weaponUsedName} (S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})
+    Hits: ${attackData.expectedHits.toFixed(2)} (${(attackData.adjustedHitProb * 100).toFixed(0)}%)
+    Wounds: ${attackData.expectedWounds.toFixed(2)} (${(attackData.woundProb * 100).toFixed(0)}%)
+    Unsaved: ${attackData.expectedUnsavedWounds.toFixed(2)} (Save: ${(saveChance * 100).toFixed(0)}%)
+    Wounds/Point: ${efficiency.toFixed(4)}
+    Efficiency: ${(1000 * efficiency).toFixed(2)}`
                 );
             }
             // Combine results for all targets
@@ -1807,7 +1791,250 @@ function appData() {
             return resultString;
         },
 
-        // --- End Scenario Calculation Logic ---
+        // Calculate outcome for opposed combat scenario (both models attack each other)
+        calculateOpposedCombatOutcome(scenario, perspectiveModel) {
+            // Get the target model
+            if (!scenario.targetModelId) {
+                return "No target selected for opposed combat.";
+            }
+            
+            const targetModel = this.getModelById(scenario.targetModelId);
+            if (!targetModel) {
+                return "Target model not found.";
+            }
+            
+            // Determine attack order based on initiative
+            const firstAttacker = perspectiveModel.initiative > targetModel.initiative ? perspectiveModel : 
+                                  targetModel.initiative > perspectiveModel.initiative ? targetModel : null;
+            const secondAttacker = firstAttacker === perspectiveModel ? targetModel : 
+                                   firstAttacker === targetModel ? perspectiveModel : null;
+            
+            let result = "";
+            
+            // Add header showing the matchup
+            result += `${perspectiveModel.name} vs ${targetModel.name} - Opposed Combat\n`;
+            
+            // Add model stats summaries
+            result += this.getModelCombatSummary(perspectiveModel) + "\n";
+            result += this.getModelCombatSummary(targetModel) + "\n";
+            
+            // If initiatives are equal, note that attacks happen simultaneously
+            if (!firstAttacker || !secondAttacker) {
+                result += "Equal initiative: Attacks are simultaneous with no penalties.\n\n";
+                
+                // Calculate attacks in both directions without penalty
+                const perspectiveAttack = this.calculateSingleAttack(perspectiveModel, targetModel, 0);
+                const targetAttack = this.calculateSingleAttack(targetModel, perspectiveModel, 0);
+                
+                // Format the perspective model's attack with efficiency
+                result += this.formatOpposedCombatAttack(perspectiveModel, targetModel, perspectiveAttack, false);
+                
+                // Format the target model's attack with efficiency
+                result += this.formatOpposedCombatAttack(targetModel, perspectiveModel, targetAttack, false);
+            } 
+            // Otherwise, calculate in initiative order with penalty for second attacker
+            else {
+                result += `${firstAttacker.name} has higher initiative and attacks first.\n\n`;
+                
+                // Calculate first attack
+                const firstAttack = this.calculateSingleAttack(firstAttacker, secondAttacker, 0);
+                
+                // Format the first attack with efficiency
+                result += this.formatOpposedCombatAttack(firstAttacker, secondAttacker, firstAttack, false);
+                
+                // Calculate penalty based on unsaved wounds from first attack
+                const unsavedWounds = firstAttack.data.expectedUnsavedWounds;
+                const secondAttackPenalty = Math.min(1, unsavedWounds); // Cap at 1 (100% penalty)
+                
+                // Calculate second attack with penalty
+                const secondAttack = this.calculateSingleAttack(secondAttacker, firstAttacker, secondAttackPenalty);
+                
+                // Format the second attack with efficiency and penalty note
+                result += this.formatOpposedCombatAttack(secondAttacker, firstAttacker, secondAttack, true, secondAttackPenalty);
+            }
+            
+            return result;
+        },
+        
+        // Helper method to format opposed combat attack display with efficiency calculations
+        formatOpposedCombatAttack(attacker, defender, attackResult, hasPenalty, penalty = 0) {
+            const data = attackResult.data;
+            let output = `\n${attacker.name} attacks ${defender.name}`;
+            
+            // Add penalty note if applicable
+            if (hasPenalty && penalty > 0) {
+                output += ` with -${(penalty * 100).toFixed(0)}% penalty from wounds`;
+            }
+            output += ":\n";
+            
+            // Get the weapon details for display
+            const meleeWeapon = data.weapon;
+            const weaponUsedName = meleeWeapon ? meleeWeapon.name : 'Base Stats';
+            const effectiveS = data.effectiveStrength;
+            const effectiveA = data.attacks;
+            const weaponAPDisplay = (data.apValue === 0) ? '-' : data.apValue;
+            
+            // Calculate efficiency
+            const attackerPoints = this.calculatePoints(attacker);
+            const efficiency = attackerPoints > 0 ? data.expectedUnsavedWounds / attackerPoints : 0;
+            const saveChance = (1.0 - data.failSaveProb);
+            
+            // Format the attack details in the requested style
+            output += `    Weapon: ${weaponUsedName} (S:${effectiveS} AP:${weaponAPDisplay} A:${effectiveA})\n`;
+            output += `    Hits: ${data.expectedHits.toFixed(2)} (${(data.adjustedHitProb * 100).toFixed(0)}%)\n`;
+            output += `    Wounds: ${data.expectedWounds.toFixed(2)} (${(data.woundProb * 100).toFixed(0)}%)\n`;
+            output += `    Unsaved: ${data.expectedUnsavedWounds.toFixed(2)} (Save: ${(saveChance * 100).toFixed(0)}%)\n`;
+            output += `    Wounds/Point: ${efficiency.toFixed(4)}\n`;
+            output += `    Efficiency: ${(1000 * efficiency).toFixed(2)}`;
+            
+            return output;
+        },
+        
+        // Helper method to get model combat summary info
+        getModelCombatSummary(model) {
+            // Get hit roll needed text
+            const hitRollNeeded = this.getHitRollNeeded(model.weaponSkill);
+            
+            // Get weapon info
+            let weaponInfo = "";
+            if (model.assignedArmoryItemIds && model.assignedArmoryItemIds.length > 0) {
+                // Try to find a melee weapon
+                const meleeWeapon = this.getEquippedMeleeWeapon(model);
+                if (meleeWeapon) {
+                    // Get effective strength based on weapon modifier
+                    let effectiveStr = this.applyStrengthModifier(model.strength, meleeWeapon.meleeStrength);
+                    
+                    // Get effective attacks based on weapon modifier
+                    let effectiveAttacks = this.applyAttacksModifier(model.attacks, meleeWeapon.meleeAttacks);
+                    
+                    // Format the AP value
+                    const apValue = meleeWeapon.ap ? meleeWeapon.ap : 0;
+                    const apFormatted = apValue === 0 ? "-" : apValue;
+                    
+                    weaponInfo = `Weapon: ${meleeWeapon.name} (S:${effectiveStr} AP:${apFormatted} A:${effectiveAttacks})`;
+                } else {
+                    // No melee weapon found, use default stats
+                    weaponInfo = `Weapon: Basic Close Combat (S:${model.strength} AP:- A:${model.attacks})`;
+                }
+            } else {
+                // No equipped weapons, use default stats
+                weaponInfo = `Weapon: Basic Close Combat (S:${model.strength} AP:- A:${model.attacks})`;
+            }
+            
+            // Format all the stats into a summary string
+            return `${model.name}: WS ${model.weaponSkill} (${hitRollNeeded} to hit) I ${model.initiative}\n${weaponInfo}`;
+        },
+        
+        // Helper method to get equipped melee weapon
+        getEquippedMeleeWeapon(model) {
+            if (!model.assignedArmoryItemIds || model.assignedArmoryItemIds.length === 0) {
+                return null;
+            }
+            
+            // Find the first melee weapon in the model's equipment
+            for (const itemId of model.assignedArmoryItemIds) {
+                const item = this.getArmoryItemById(itemId);
+                if (item && item.type === 'meleeWeapon') {
+                    return item;
+                }
+            }
+            
+            return null; // No melee weapon found
+        },
+        
+        // Helper method to calculate hit roll needed text (e.g., "3+")
+        getHitRollNeeded(weaponSkill) {
+            // This is a simplified version - you could expand to include other factors
+            // Example: 3+ to hit is common for average WS
+            let rollNeeded;
+            
+            if (weaponSkill >= 6) {
+                rollNeeded = "2+";
+            } else if (weaponSkill === 5) {
+                rollNeeded = "3+";
+            } else if (weaponSkill === 4) {
+                rollNeeded = "3+";
+            } else if (weaponSkill === 3) {
+                rollNeeded = "4+";
+            } else if (weaponSkill <= 2) {
+                rollNeeded = "5+";
+            } else {
+                rollNeeded = "4+"; // Default
+            }
+            
+            return rollNeeded;
+        },
+        
+        // Helper method to calculate a single attack for opposed combat
+        calculateSingleAttack(attacker, defender, penalty) {
+            // Get hit probability
+            const hitProb = this.getHitProbability(attacker.weaponSkill, defender.weaponSkill);
+            const adjustedHitProb = Math.max(0, hitProb * (1 - penalty));
+            
+            // Get wound probability
+            // Get effective strength if melee weapon is equipped
+            const meleeWeapon = this.getEquippedMeleeWeapon(attacker);
+            let effectiveStrength = attacker.strength;
+            let attacks = attacker.attacks;
+            
+            if (meleeWeapon) {
+                effectiveStrength = this.applyStrengthModifier(attacker.strength, meleeWeapon.meleeStrength);
+                attacks = this.applyAttacksModifier(attacker.attacks, meleeWeapon.meleeAttacks);
+            }
+            
+            const woundProb = this.getWoundProbability(effectiveStrength, defender.toughness);
+            
+            // Get save failure probability
+            // Get AP value if melee weapon is equipped
+            let apValue = 0;
+            if (meleeWeapon && meleeWeapon.ap !== null && meleeWeapon.ap !== undefined) {
+                apValue = parseInt(meleeWeapon.ap) || 0;
+            }
+            
+            const failSaveProb = this.getFailSaveProbability(defender.save, defender.invulnSave, apValue);
+            
+            // Calculate expected outcomes
+            const expectedHits = attacks * adjustedHitProb;
+            const expectedWounds = expectedHits * woundProb;
+            const expectedUnsavedWounds = expectedWounds * failSaveProb;
+            
+            // Format result string
+            let resultString = "";
+            
+            // Add basic attack stats
+            resultString += `Attacks: ${attacks}\n`;
+            
+            if (penalty > 0) {
+                resultString += `Hit roll: ${adjustedHitProb.toFixed(2)} (base ${hitProb.toFixed(2)} with ${(penalty * 100).toFixed(0)}% penalty)\n`;
+            } else {
+                resultString += `Hit roll: ${adjustedHitProb.toFixed(2)}\n`;
+            }
+            
+            resultString += `Wound roll: ${woundProb.toFixed(2)}\n`;
+            resultString += `Failed save: ${failSaveProb.toFixed(2)}\n`;
+            resultString += `Expected hits: ${expectedHits.toFixed(2)}\n`;
+            resultString += `Expected wounds: ${expectedWounds.toFixed(2)}\n`;
+            resultString += `Expected unsaved wounds: ${expectedUnsavedWounds.toFixed(2)}\n`;
+            
+            // Return both the formatted string and a data object
+            return {
+                resultString,
+                data: {
+                    weapon: meleeWeapon,
+                    baseHitProb: hitProb,
+                    adjustedHitProb,
+                    woundProb,
+                    failSaveProb,
+                    attacks,
+                    effectiveStrength,
+                    apValue,
+                    expectedHits,
+                    expectedWounds,
+                    expectedUnsavedWounds,
+                    penalty
+                }
+            };
+        },
 
         // --- Helper Functions for Stat Modifiers ---
         applyStrengthModifier(baseStrength, modifier) {

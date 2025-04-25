@@ -763,6 +763,7 @@
                                 <option value="meleeDefense">Melee Defense</option>
                                 -->
                                 <option value="rangedDefense">Ranged Defense</option>
+                                <option value="opposedCombat">Opposed Combat</option>
                             </select>
                         </div>
 
@@ -787,13 +788,23 @@
                                 <small>Hold Ctrl/Cmd to select multiple targets.</small>
                             </div>
                         </div>
-
-                        <!-- Placeholder for Ranged Attack Fields -->
-                        <!-- REMOVED: Replaced by showing the Melee section for Ranged attacks too -->
-                        <!-- <div x-show="selectedScenario.type === 'rangedAttack'" class="scenario-type-fields"> -->
-                        <!--    <h4>Ranged Attack Options</h4> -->
-                        <!--    <p>(Weapon profile and target selection will go here)</p> -->
-                        <!-- </div> -->
+                        
+                        <!-- Opposed Combat Specific Fields -->
+                        <div x-show="selectedScenario.type === 'opposedCombat'" class="scenario-type-fields">
+                            <h4>Opponent Selection</h4>
+                            <div class="form-group">
+                                <label for="opposedTarget">Select Opponent:</label>
+                                <select id="opposedTarget" x-model="selectedScenario.targetModelId" style="width: 100%;">
+                                    <option value="">-- Select an opponent --</option>
+                                    <!-- Populate options dynamically -->
+                                    <template x-for="model in models" :key="model.id">
+                                        <!-- Only show models that aren't the perspective model -->
+                                        <option :value="model.id" x-text="model.name || 'Unnamed Model'"></option>
+                                    </template>
+                                </select>
+                                <small>Both models will attack each other. The model with higher Initiative attacks first, potentially causing penalties to the slower model.</small>
+                            </div>
+                        </div>
 
                         <!-- Placeholder for Defense Fields -->
                         <div x-show="selectedScenario.type === 'meleeDefense' || selectedScenario.type === 'rangedDefense'" class="scenario-type-fields">
