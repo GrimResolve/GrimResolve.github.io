@@ -1,7 +1,7 @@
 function appData() {
     return {
         getStatOrder: () => ['movement', 'weaponSkill', 'ballisticSkill', 'strength', 'toughness', 'wounds', 'initiative', 'attacks', 'leadership', 'save', 'invulnSave'],
-        nextModelId: 6, // Start counting from the next available ID
+        nextModelId: 16, // Updated to match the number of models + 1
         models: [
             {
                 id: 1, // Added ID
@@ -52,6 +52,38 @@ function appData() {
                 assignedArmoryItemIds: ["Storm Bolter", "Power Fist"] // Use names for default assignment
             },
             {
+                id: 2, // Added ID
+                name: 'Assault Marine',
+                movement: 12,
+                weaponSkill: 4,
+                ballisticSkill: '3+',
+                strength: 4,
+                toughness: 4,
+                wounds: 1,
+                initiative: 4,
+                attacks: 1,
+                leadership: 8,
+                save: '3+',
+                invulnSave: '-',
+                assignedArmoryItemIds:  ["Chainsword", "Bolt Pistol"] // Use names for default assignment
+            },
+            {
+                id: 2, // Added ID
+                name: 'Devastator (heavy bolter)',
+                movement: 6,
+                weaponSkill: 4,
+                ballisticSkill: '3+',
+                strength: 4,
+                toughness: 4,
+                wounds: 1,
+                initiative: 4,
+                attacks: 1,
+                leadership: 8,
+                save: '3+',
+                invulnSave: '-',
+                assignedArmoryItemIds:  ["Heavy Bolter"] // Use names for default assignment
+            },
+            {
                 id: 4, // Added ID
                 name: 'Ork Warboy',
                 movement: 5,
@@ -82,6 +114,166 @@ function appData() {
                 save: '5+',
                 invulnSave: '-',
                 assignedArmoryItemIds: ["Shuriken Catapult"]
+            },
+            {
+                id: 6,
+                name: 'Dire Avenger',
+                movement: 7,
+                weaponSkill: 4,
+                ballisticSkill: '3+',
+                strength: 3,
+                toughness: 3,
+                wounds: 1,
+                initiative: 5,
+                attacks: 1,
+                leadership: 9,
+                save: '4+',
+                invulnSave: '-',
+                assignedArmoryItemIds: ["Shuriken Catapult"]
+            },
+            {
+                id: 7,
+                name: 'Howling Banshee',
+                movement: 8,
+                weaponSkill: 5,
+                ballisticSkill: '3+',
+                strength: 3,
+                toughness: 3,
+                wounds: 1,
+                initiative: 6,
+                attacks: 2,
+                leadership: 9,
+                save: '4+',
+                invulnSave: '-',
+                assignedArmoryItemIds: ["Shuriken Pistol", "Power Weapon"]
+            },
+            {
+                id: 8,
+                name: 'Ork Nob',
+                movement: 5,
+                weaponSkill: 5,
+                ballisticSkill: '5+',
+                strength: 4,
+                toughness: 4,
+                wounds: 2,
+                initiative: 3,
+                attacks: 3,
+                leadership: 7,
+                save: '6+',
+                invulnSave: '-',
+                assignedArmoryItemIds: ["Big Choppa"]
+            },
+            {
+                id: 9,
+                name: 'Veteran Guardsman',
+                movement: 6,
+                weaponSkill: 4,
+                ballisticSkill: '3+',
+                strength: 3,
+                toughness: 3,
+                wounds: 1,
+                initiative: 3,
+                attacks: 1,
+                leadership: 8,
+                save: '5+',
+                invulnSave: '-',
+                assignedArmoryItemIds: ["Lasgun"]
+            },
+            {
+                id: 10,
+                name: 'Termagaunt',
+                movement: 6,
+                weaponSkill: 3,
+                ballisticSkill: '4+',
+                strength: 3,
+                toughness: 3,
+                wounds: 1,
+                initiative: 4,
+                attacks: 1,
+                leadership: 6,
+                save: '6+',
+                invulnSave: '-',
+                assignedArmoryItemIds: ["Flesh Borer"]
+            },
+            {
+                id: 11,
+                name: 'Genestealer',
+                movement: 8,
+                weaponSkill: 6,
+                ballisticSkill: '-',
+                strength: 4,
+                toughness: 4,
+                wounds: 1,
+                initiative: 6,
+                attacks: 3,
+                leadership: 9,
+                save: '5+',
+                invulnSave: '-',
+                assignedArmoryItemIds: [] // No equipment
+            },
+            {
+                id: 12,
+                name: 'Bloodletter',
+                movement: 6,
+                weaponSkill: 5,
+                ballisticSkill: '-',
+                strength: 4,
+                toughness: 3,
+                wounds: 1,
+                initiative: 5,
+                attacks: 2,
+                leadership: 7,
+                save: '-',
+                invulnSave: '5+',
+                assignedArmoryItemIds: ["Power Weapon"]
+            },
+            {
+                id: 13,
+                name: 'Necron Warrior',
+                movement: 5,
+                weaponSkill: 4,
+                ballisticSkill: '3+',
+                strength: 4,
+                toughness: 4,
+                wounds: 1,
+                initiative: 2,
+                attacks: 1,
+                leadership: 10,
+                save: '4+',
+                invulnSave: '-',
+                assignedArmoryItemIds: ["Gauss Flayer"]
+            },
+            {
+                id: 14,
+                name: 'Striking Scorpion',
+                movement: 7,
+                weaponSkill: 5,
+                ballisticSkill: '3+',
+                strength: 4,
+                toughness: 3,
+                wounds: 1,
+                initiative: 5,
+                attacks: 2,
+                leadership: 9,
+                save: '4+',
+                invulnSave: '-',
+                assignedArmoryItemIds: ["Chainsword", "Shuriken Pistol"]
+            },
+            {
+                id: 15,
+                name: 'Battle Sister',
+                movement: 6,
+                weaponSkill: 3,
+                ballisticSkill: '3+',
+                strength: 3,
+                toughness: 3,
+                wounds: 1,
+                initiative: 3,
+                attacks: 1,
+                leadership: 8,
+                save: '3+',
+                invulnSave: '6+',
+                assignedArmoryItemIds: ["Bolter"]
             }
         ],
         selectedModel: null,
@@ -575,6 +767,37 @@ function appData() {
                     {
                         id: this.nextArmoryItemId++, name: 'Krak Grenades', type: 'wargear', description: 'Anti-tank grenade', baseCost: 0,
                         range: 8, strength: 6, ap: 4, attacks: 1, weaponType: 'Grenade', // Treat as single-shot ranged? Or just info?
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    // Additional weapons
+                    {
+                        id: this.nextArmoryItemId++, name: 'Pulse Rifle', type: 'rangedWeapon', description: 'Tau standard infantry weapon', baseCost: 0,
+                        range: 30, strength: 5, ap: 4, attacks: 1, weaponType: 'Rapid Fire',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Gauss Flayer', type: 'rangedWeapon', description: 'Necron standard weapon', baseCost: 0,
+                        range: 24, strength: 4, ap: 5, attacks: 1, weaponType: 'Rapid Fire',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Shoota', type: 'rangedWeapon', description: 'Ork ballistic weapon', baseCost: 0,
+                        range: 18, strength: 4, ap: 0, attacks: 2, weaponType: 'Assault',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Shuriken Pistol', type: 'rangedWeapon', description: 'Aeldari sidearm', baseCost: 0,
+                        range: 12, strength: 4, ap: 5, attacks: 1, weaponType: 'Pistol',
+                        meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Big Choppa', type: 'meleeWeapon', description: 'Oversized Ork melee weapon', baseCost: 0,
+                        range: null, strength: null, ap: 4, attacks: null, weaponType: null,
+                        meleeStrength: '+2', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
+                    },
+                    {
+                        id: this.nextArmoryItemId++, name: 'Flesh Borer', type: 'rangedWeapon', description: 'Tyranid bio-weapon', baseCost: 0,
+                        range: 12, strength: 4, ap: 0, attacks: 1, weaponType: 'Assault',
                         meleeStrength: '-', meleeAttacks: '-', statWeights: Array(this.getStatOrder().length).fill(0)
                     },
                 ];
