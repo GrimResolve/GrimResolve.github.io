@@ -692,7 +692,7 @@
                                         Enable Rogue Trader Scaling
                                     </label>
                                     <p x-show="useRogueTraderScaling" style="font-size: 0.9em; color: #666; margin-top: 5px;">
-                                        Rogue Trader Scaling applies a progressive cost multiplier based on the model's base cost:
+                                        Rogue Trader Scaling applies a progressive cost multiplier based on the model's base cost: (before saves cost)
                                         <br>• 11-15 points: ×1.5
                                         <br>• 16-20 points: ×2
                                         <br>• 21-30 points: ×3
@@ -710,7 +710,7 @@
                                         Enable Smooth Scaling
                                     </label>
                                     <p x-show="useSmoothScaling" style="font-size: 0.9em; color: #666; margin-top: 5px;">
-                                        Smooth Scaling multiplies the model's cost by 10% of itself.
+                                        Smooth Scaling multiplies the model's cost by 10% of itself. (including saves)
                                         <br>For example, a 20-point model would be multiplied by 2 (20 × 0.1 = 2).
                                         <br>This creates a smooth exponential curve instead of the step function used by Rogue Trader scaling.
                                     </p>

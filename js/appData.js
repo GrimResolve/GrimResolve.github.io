@@ -801,7 +801,19 @@ function appData() {
                 scaledModelStatTotal = statBaseCost * scaleFactor - this.baseModelCost;
             } else if (this.useRogueTraderScaling) {
                 // Rogue Trader scaling (only apply if smooth scaling is off)
-                const statBaseCost = this.baseModelCost + modelStatTotal;
+                
+                // Calculate the sum of all adjusted stats EXCEPT saves
+                const statsSum = Object.entries(adjustedValues).reduce((sum, [stat, value]) => {
+                    // Skip save and invulnSave stats
+                    if (stat !== 'save' && stat !== 'invulnSave') {
+                        return sum + value;
+                    }
+                    return sum;
+                }, 0);
+                
+                // Use base cost + sum of non-save stats for scaling
+                const statBaseCost = this.baseModelCost + statsSum;
+                
                 scaledModelStatTotal = this.applyRogueTraderScaling(statBaseCost) - this.baseModelCost;
             }
 
@@ -910,7 +922,18 @@ function appData() {
                 scaledModelStatTotal = statBaseCost * smoothScalingFactor - this.baseModelCost;
             } else if (this.useRogueTraderScaling) {
                 rogueTraderScaling = true;
-                const statBaseCost = this.baseModelCost + modelStatTotal;
+                
+                // Calculate the sum of all adjusted stats EXCEPT saves
+                const statsSum = Object.entries(adjustedValues).reduce((sum, [stat, value]) => {
+                    // Skip save and invulnSave stats
+                    if (stat !== 'save' && stat !== 'invulnSave') {
+                        return sum + value;
+                    }
+                    return sum;
+                }, 0);
+                
+                // Use base cost + sum of non-save stats for scaling
+                const statBaseCost = this.baseModelCost + statsSum;
                 
                 if (statBaseCost <= 10) rogueTraderMultiplier = 1;
                 else if (statBaseCost <= 15) rogueTraderMultiplier = 1.5;
