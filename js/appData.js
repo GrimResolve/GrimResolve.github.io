@@ -88,6 +88,7 @@ function appData() {
         showPointConfig: true,
         currentStat: 'weights',
         useRelativePoints: true, // Default to relative points
+        relativePointsBase: 5, // Default normalization value
         
         // -- Removed Scenario Simulation Data --
         // scenarioConfig: {
@@ -315,9 +316,20 @@ function appData() {
                 this.useRelativePoints = JSON.parse(savedUseRelativePoints);
             }
             
+            // Load relative points base value
+            const savedRelativePointsBase = localStorage.getItem('relativePointsBase');
+            if (savedRelativePointsBase !== null) {
+                this.relativePointsBase = JSON.parse(savedRelativePointsBase);
+            }
+            
             // Watch for changes to useRelativePoints and save to localStorage
             this.$watch('useRelativePoints', value => {
                 localStorage.setItem('useRelativePoints', JSON.stringify(value));
+            });
+            
+            // Watch for changes to relativePointsBase and save to localStorage
+            this.$watch('relativePointsBase', value => {
+                localStorage.setItem('relativePointsBase', JSON.stringify(value));
             });
 
             // Initialize the first model as selected by default
@@ -705,7 +717,7 @@ function appData() {
 
             // For relative points calculation
             if (index === 0) {
-                return (5).toFixed(2); // First model is always 5, ensure consistent formatting
+                return this.relativePointsBase.toFixed(2); // First model uses the base value
             }
             if (this.models.length < 1) {
                 return '-'; // Should not happen, but safeguard
@@ -718,7 +730,7 @@ function appData() {
                 return '-'; // Avoid division by zero or negative base
             }
 
-            return ((currentModelPoints / firstModelPoints) * 5).toFixed(2); // Calculate relative points, rounded
+            return ((currentModelPoints / firstModelPoints) * this.relativePointsBase).toFixed(2); // Calculate relative points using the base value
         },
         
         getTotalPoints() {

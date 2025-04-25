@@ -26,6 +26,10 @@
                     <input type="checkbox" x-model="useRelativePoints">
                     <span>Relative Points</span>
                 </label>
+                <div class="normalize-input">
+                    <span class="normalize-label">Base:</span>
+                    <input type="number" x-model.number="relativePointsBase" min="1" max="100" step="1" :disabled="!useRelativePoints">
+                </div>
             </div>
             <button class="export-btn" @click="exportModels">Export Models</button>
             <label class="import-btn" for="importInput">Import Models</label>
@@ -51,6 +55,12 @@
                     <div class="point-breakdown" x-show="selectedModel !== null">
                         <div class="breakdown-header">Absolute Point Calculation:</div>
                         <div class="breakdown-base">Base Cost: 10</div>
+                        
+                        <!-- Always show the raw points value when a model is selected -->
+                        <div class="breakdown-always-points">
+                            Raw Points: <span x-text="selectedModel ? calculatePoints(selectedModel).toFixed(1) : '-'"></span>
+                        </div>
+                        
                         <template x-if="breakdown">
                             <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
                                 <div class="breakdown-item">

@@ -82,6 +82,43 @@
     cursor: pointer;
 }
 
+.normalize-input {
+    margin-left: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.normalize-label {
+    font-size: 0.8em;
+    margin-right: 4px;
+    color: #444;
+}
+
+.normalize-input input[type="number"] {
+    width: 45px;
+    text-align: center;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    font-size: 0.9em;
+}
+
+.normalize-input input[type="number"]:disabled {
+    background-color: #eee;
+    color: #999;
+}
+
+/* Hide spinners on number input */
+.normalize-input input[type="number"]::-webkit-inner-spin-button,
+.normalize-input input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.normalize-input input[type="number"] {
+    -moz-appearance: textfield;
+}
+
 /* Adjust body padding to account for fixed header exactly */
 body {
     font-family: Arial, sans-serif;
@@ -567,6 +604,16 @@ button:hover {
     border-radius: 3px;
 }
 
+.breakdown-always-points {
+    margin-bottom: 10px;
+    background-color: #f0f8f0;
+    padding: 5px 8px;
+    border-radius: 3px;
+    font-weight: bold;
+    color: #2a6434;
+    border: 1px dashed #b3d4b3;
+}
+
 /* Update the breakdown item styles for better alignment */
 .breakdown-item {
     display: flex;
@@ -609,6 +656,14 @@ button:hover {
     font-weight: bold;
     text-align: right;
     color: #333;
+}
+
+.breakdown-point-line {
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #ddd;
+    font-size: 0.95em;
+    color: #444;
 }
 
 /* Capability Chart Styles */
