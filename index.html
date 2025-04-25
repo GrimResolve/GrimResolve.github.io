@@ -58,21 +58,22 @@
                         
                         <!-- Always show the raw points value when a model is selected -->
                         <div class="breakdown-always-points">
-                            Raw Points: <span x-text="selectedModel ? calculatePoints(selectedModel).toFixed(1) : '-'"></span>
+                            Raw Points: <span x-text="selectedModel ? calculatePoints(selectedModel).toFixed(2) : '-'"></span>
                         </div>
                         
                         <template x-if="breakdown">
                             <template x-for="(baseValue, stat) in breakdown.baseValues" :key="stat">
                                 <div class="breakdown-item">
-                                    <span x-text="formatStatName(stat) + ':'"></span>
-                                    <span x-text="baseValue.toFixed(1)"></span>
-                                    <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.1">
+                                    <span x-text="formatStatName(stat) + ': ' + selectedModel[stat]"></span>
+                                    
+                                    <span x-text="baseValue.toFixed(2)"></span>
+                                    <template x-if="Math.abs(breakdown.adjustedValues[stat] - baseValue) > 0.001">
                                         <span class="adjusted-value" 
-                                            x-text="' → ' + breakdown.adjustedValues[stat].toFixed(1)"></span>
+                                            x-text="' → ' + breakdown.adjustedValues[stat].toFixed(2)"></span>
                                     </template>
                                     <!-- Add percentage contribution calculation -->
                                     <span class="percentage-value" 
-                                          x-text="' (' + Math.round((breakdown.adjustedValues[stat] / (breakdown.total - 10 - (breakdown.equipmentTotalCost || 0))) * 100) + '%)'"></span>
+                                          x-text="' (' + Math.round((breakdown.adjustedValues[stat] / breakdown.total ) * 100) + '%)'"></span>
                                 </div>
                             </template>
                             
