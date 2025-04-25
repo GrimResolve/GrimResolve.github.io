@@ -2548,7 +2548,7 @@ function appData() {
                 this.pointValueLookups = this.getDefaultPointValueLookups();
                 this.statMultipliers = this.getInitialMultipliers();
                 this.statWeightMatrix = this.getInitialWeightMatrix();
-                this.baseModelCost = 10; // Default value
+                this.baseModelCost = 5; // Default value changed from 10 to 5
                 this.useRelativePoints = true; // Default value
                 this.relativePointsBase = 5; // Default value
                 
