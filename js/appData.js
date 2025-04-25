@@ -1427,16 +1427,13 @@ function appData() {
             targetWS = parseInt(targetWS, 10);
             if (isNaN(attackerWS) || isNaN(targetWS)) return 0; // Or handle error
 
-            if (attackerWS >= targetWS * 2) {
-                rollNeeded = 2;
-            } else if (attackerWS > targetWS) {
+            if (attackerWS > targetWS) {
                 rollNeeded = 3;
-            } else if (attackerWS === targetWS) {
-                rollNeeded = 4;
-            } else if (targetWS > 0 && attackerWS * 2 <= targetWS) { // Avoid division by zero if targetWS is 0
-                rollNeeded = 6;
-            } else { // attackerWS < targetWS but not half or less
+            } else if (targetWS > attackerWS * 2) { // Target WS is more than double attacker WS
                 rollNeeded = 5;
+            } else {
+                // Equal WS or target's WS is higher but not double
+                rollNeeded = 4;
             }
             return this.getD6Probability(rollNeeded);
         },
