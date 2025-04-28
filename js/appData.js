@@ -4,7 +4,7 @@ function appData() {
         nextModelId: 16, // Updated to match the number of models + 1
         models: [
             {
-                id: 1, // Added ID
+                id: 1,
                 name: 'Imperial Guardsman',
                 movement: 6,
                 weaponSkill: 3,
@@ -20,7 +20,7 @@ function appData() {
                 assignedArmoryItemIds: ["Lasgun"]
             },
             {
-                id: 2, // Added ID
+                id: 2,
                 name: 'Space Marine',
                 movement: 6,
                 weaponSkill: 4,
@@ -33,10 +33,10 @@ function appData() {
                 leadership: 8,
                 save: '3+',
                 invulnSave: '-',
-                assignedArmoryItemIds:  ["Bolter"] // Use names for default assignment
+                assignedArmoryItemIds:  ["Bolter"]
             },
             {
-                id: 3, // Added ID
+                id: 3,
                 name: 'Terminator',
                 movement: 5,
                 weaponSkill: 4,
@@ -49,10 +49,10 @@ function appData() {
                 leadership: 8,
                 save: '2+',
                 invulnSave: '5+',
-                assignedArmoryItemIds: ["Storm Bolter", "Power Fist"] // Use names for default assignment
+                assignedArmoryItemIds: ["Storm Bolter", "Power Fist"]
             },
             {
-                id: 2, // Added ID
+                id: 4,
                 name: 'Assault Marine',
                 movement: 12,
                 weaponSkill: 4,
@@ -65,10 +65,10 @@ function appData() {
                 leadership: 8,
                 save: '3+',
                 invulnSave: '-',
-                assignedArmoryItemIds:  ["Chainsword", "Bolt Pistol"] // Use names for default assignment
+                assignedArmoryItemIds:  ["Chainsword", "Bolt Pistol"]
             },
             {
-                id: 2, // Added ID
+                id: 5,
                 name: 'Devastator (heavy bolter)',
                 movement: 6,
                 weaponSkill: 4,
@@ -81,10 +81,10 @@ function appData() {
                 leadership: 8,
                 save: '3+',
                 invulnSave: '-',
-                assignedArmoryItemIds:  ["Heavy Bolter"] // Use names for default assignment
+                assignedArmoryItemIds:  ["Heavy Bolter"]
             },
             {
-                id: 4, // Added ID
+                id: 6,
                 name: 'Ork Warboy',
                 movement: 5,
                 weaponSkill: 4,
@@ -100,7 +100,7 @@ function appData() {
                 assignedArmoryItemIds: ["Choppa"]
             },
             {
-                id: 5, // Added ID
+                id: 7,
                 name: 'Eldar Guardian',
                 movement: 6,
                 weaponSkill: 4,
@@ -116,7 +116,7 @@ function appData() {
                 assignedArmoryItemIds: ["Shuriken Catapult"]
             },
             {
-                id: 6,
+                id: 8,
                 name: 'Dire Avenger',
                 movement: 7,
                 weaponSkill: 4,
@@ -132,7 +132,7 @@ function appData() {
                 assignedArmoryItemIds: ["Shuriken Catapult"]
             },
             {
-                id: 7,
+                id: 9,
                 name: 'Howling Banshee',
                 movement: 8,
                 weaponSkill: 5,
@@ -148,7 +148,7 @@ function appData() {
                 assignedArmoryItemIds: ["Shuriken Pistol", "Power Weapon"]
             },
             {
-                id: 8,
+                id: 10,
                 name: 'Ork Nob',
                 movement: 5,
                 weaponSkill: 5,
@@ -164,7 +164,7 @@ function appData() {
                 assignedArmoryItemIds: ["Big Choppa"]
             },
             {
-                id: 9,
+                id: 11,
                 name: 'Veteran Guardsman',
                 movement: 6,
                 weaponSkill: 4,
@@ -180,7 +180,7 @@ function appData() {
                 assignedArmoryItemIds: ["Lasgun"]
             },
             {
-                id: 10,
+                id: 12,
                 name: 'Termagaunt',
                 movement: 6,
                 weaponSkill: 3,
@@ -196,7 +196,7 @@ function appData() {
                 assignedArmoryItemIds: ["Flesh Borer"]
             },
             {
-                id: 11,
+                id: 13,
                 name: 'Genestealer',
                 movement: 8,
                 weaponSkill: 6,
@@ -212,7 +212,7 @@ function appData() {
                 assignedArmoryItemIds: [] // No equipment
             },
             {
-                id: 12,
+                id: 14,
                 name: 'Bloodletter',
                 movement: 6,
                 weaponSkill: 5,
@@ -228,7 +228,7 @@ function appData() {
                 assignedArmoryItemIds: ["Power Weapon"]
             },
             {
-                id: 13,
+                id: 15,
                 name: 'Necron Warrior',
                 movement: 5,
                 weaponSkill: 4,
@@ -244,7 +244,7 @@ function appData() {
                 assignedArmoryItemIds: ["Gauss Flayer"]
             },
             {
-                id: 14,
+                id: 16,
                 name: 'Striking Scorpion',
                 movement: 7,
                 weaponSkill: 5,
@@ -260,7 +260,7 @@ function appData() {
                 assignedArmoryItemIds: ["Chainsword", "Shuriken Pistol"]
             },
             {
-                id: 15,
+                id: 17,
                 name: 'Battle Sister',
                 movement: 6,
                 weaponSkill: 3,
@@ -707,49 +707,53 @@ function appData() {
         },
         
         addModel() {
-            const lastModel = this.models[this.models.length - 1];
+            // Generate a unique ID using timestamp and random number
+            const generateUniqueId = () => {
+                const timestamp = Date.now();
+                const random = Math.floor(Math.random() * 1000);
+                return `${timestamp}-${random}`;
+            };
+
             const newModel = {
-                id: this.nextModelId++, // Assign next ID and increment
-                name: lastModel.name,
-                movement: lastModel.movement,
-                weaponSkill: lastModel.weaponSkill,
-                ballisticSkill: lastModel.ballisticSkill,
-                strength: lastModel.strength,
-                toughness: lastModel.toughness,
-                wounds: lastModel.wounds,
-                initiative: lastModel.initiative,
-                attacks: lastModel.attacks,
-                leadership: lastModel.leadership,
-                save: lastModel.save,
-                invulnSave: lastModel.invulnSave,
-                assignedArmoryItemIds: [] // Initialize for new model
+                id: generateUniqueId(),
+                name: '',
+                movement: 6,
+                weaponSkill: 4,
+                ballisticSkill: '4+',
+                strength: 4,
+                toughness: 4,
+                wounds: 1,
+                initiative: 4,
+                attacks: 1,
+                leadership: 7,
+                save: '4+',
+                invulnSave: '-',
+                assignedArmoryItemIds: []
             };
             this.models.push(newModel);
-            this.selectedModel = newModel; // Select the newly added model
-            this.saveModels(true); // Save after adding model and show notification
+            this.saveModels();
         },
         
         duplicateModel(index) {
-            const modelToDuplicate = this.models[index];
-            const newModel = {
-                id: this.nextModelId++, // Assign next ID and increment
-                name: modelToDuplicate.name,
-                movement: modelToDuplicate.movement,
-                weaponSkill: modelToDuplicate.weaponSkill,
-                ballisticSkill: modelToDuplicate.ballisticSkill,
-                strength: modelToDuplicate.strength,
-                toughness: modelToDuplicate.toughness,
-                wounds: modelToDuplicate.wounds,
-                initiative: modelToDuplicate.initiative,
-                attacks: modelToDuplicate.attacks,
-                leadership: modelToDuplicate.leadership,
-                save: modelToDuplicate.save,
-                invulnSave: modelToDuplicate.invulnSave,
-                assignedArmoryItemIds: [...modelToDuplicate.assignedArmoryItemIds] // Copy assigned items
-            };
-            this.models.splice(index + 1, 0, newModel);
-            this.selectedModel = newModel; // Select the newly duplicated model
-            this.saveModels(true); // Save after duplicating model and show notification
+            if (index >= 0 && index < this.models.length) {
+                const modelToDuplicate = this.models[index];
+                
+                // Find the highest existing ID
+                const getNextId = () => {
+                    const maxId = Math.max(...this.models.map(model => parseInt(model.id) || 0));
+                    return (maxId + 1).toString();
+                };
+
+                const duplicatedModel = {
+                    ...modelToDuplicate,
+                    id: getNextId(),
+                    name: modelToDuplicate.name + ' (Copy)',
+                    assignedArmoryItemIds: [...modelToDuplicate.assignedArmoryItemIds]
+                };
+                
+                this.models.push(duplicatedModel);
+                this.saveModels();
+            }
         },
         
         removeModel(index) {
